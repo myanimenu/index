@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myanimenu</title>
+    <link rel="shortcut icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRM9U4oWgjV_LNl7Kfd0NqTKweF_weeKF8OFg&s" type="image/x-icon">
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: #f8fafc;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* --- UI --- */
+        .config-modal {
+            background: linear-gradient(135deg, #121212 0%, #0d0d0d 100%);
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+        }
+        
+        .config-sidebar {
+            background: #0f0f0f;
+            border-right: 1px solid #2a2a2a;
+        }
+
+        .custom-input {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            transition: border-color 0.1s;
+        }
+        .custom-input:focus {
+            background: #1a1a1a;
+            border-color: #6366f1;
+            outline: none;
+        }
+
+        /* Toggle Switch melhorado */
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+        }
+        .toggle-switch.active {
+            background: #10b981;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.1s;
+        }
+        .toggle-switch.active::after {
+            left: 22px;
+        }
+        
+        /* --- Links --- */
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.6);
+            border-color: #6366f1;
+        }
+        
+        /* Animações mantidas apenas para o site principal */
+        @keyframes blob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            30% { transform: translate(-20px, 30px) scale(1.1); }
+            60% { transform: translate(30px, -20px) scale(0.9); }
+        }
+        .animate-blob {
+            animation: blob 10s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .animation-delay-2000 { animation-delay: 2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Efeitos simples de hover */
+        .hover-lift {
+            transition: transform 0.1s;
+        }
+        .hover-lift:hover {
+            transform: translateY(-1px);
+        }
+
+
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ap: {
+                            accent: '#6366f1',
+                            text: '#ffffff',
+                            muted: '#9ca3af'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, memo } = React;
+
+        const defaultData = {
+            FIRST: { // Antigo: watched
+                title: "watched-animes",
+                subtitle: "version-x",
+                url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched",
+                icon: "ph-eye", 
+                color: "bg-green-600",
+                visible: true, 
+                enabled: true
+            },
+            SECOND: { // Antigo: seasonal
+                title: "seasonalist",
+                subtitle: "version-ii",
+                url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal",
+                icon: "ph-clock",
+                color: "bg-red-600",
+                visible: true,
+                enabled: true
+            },
+            THIRD: { // Antigo: txt
+                title: "myhtmlist",
+                subtitle: "version-viii",
+                url: "myhtmlist.html", 
+                icon: "ph-file-html",
+                color: "bg-pink-600",
+                visible: true,
+                enabled: true
+            },
+            FOURTH: { // Antigo: sequels
+                title: "sequelist",
+                subtitle: "version-i",
+                url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329",
+                icon: "ph-book-open",
+                color: "bg-cyan-600",
+                visible: true,
+                enabled: true
+            },
+            FIFTH: { // Antigo: mylist
+                title: "my-list",
+                subtitle: "version-v",
+                url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896",
+                icon: "ph-star",
+                color: "bg-indigo-500",
+                visible: true,
+                enabled: true
+            },
+            SIXTH: { // Antigo: ranks
+                title: "my-ranks-lists",
+                subtitle: "version-vii",
+                url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking",
+                icon: "ph-crown",
+                color: "bg-yellow-500",
+                visible: true,
+                enabled: true
+            },
+        };
+
+        const LucideIcon = memo(({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]); 
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        });
+
+        const SidebarItem = memo(({ id, item, isActive, onClick }) => (
+            <button
+                onClick={() => onClick(id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover-lift ${
+                    isActive 
+                    ? 'bg-gradient-to-r from-indigo-900/30 to-indigo-900/10 text-white border-l-2 border-indigo-500' 
+                    : 'text-gray-400 hover:bg-gray-900/30 hover:text-gray-300'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <div className={`p-1 rounded ${item.color.replace('bg-', 'bg-')} bg-opacity-10`}>
+                        <i className={`ph-bold ${item.icon} text-sm text-white`}></i>
+                    </div>
+                    <div className="text-left">
+                        <span className="font-medium text-xs capitalize">{id}</span>
+                        <div className="text-[10px] text-gray-500 truncate max-w-[80px]">{item.title}</div>
+                    </div>
+                </div>
+                <div className={`w-1.5 h-1.5 rounded-full ${item.enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            </button>
+        ));
+
+        const LinkCardSite2 = memo(({ data, isPreview = false }) => {
+            const iconColorClass = data.color ? data.color.replace('bg-', 'text-') : 'text-gray-500';
+            
+            const isDisabled = !data.enabled && !isPreview; 
+            
+            const WrapperTag = isDisabled ? 'div' : 'a';
+            
+            const WrapperProps = isDisabled ? { 
+                title: "Indisponível no momento",
+                className: `group bg-[#121212] border border-[#222] p-6 rounded-xl flex flex-col justify-center relative overflow-hidden h-32 opacity-50 cursor-not-allowed transition-all duration-300`,
+            } : {
+                href: data.url, 
+                target: "_blank", 
+                rel: "noopener noreferrer",
+                className: `group bg-[#121212] border border-[#222] p-6 rounded-xl flex flex-col justify-center relative overflow-hidden h-32 card-hover cursor-pointer transition-all duration-300`,
+            };
+
+            return (
+                <WrapperTag {...WrapperProps}>
+                    <div className={`absolute -right-6 -bottom-8 opacity-10 ${isDisabled ? 'grayscale' : 'group-hover:opacity-25'} transition-all duration-500 group-hover:scale-110 group-hover:-rotate-12 ${iconColorClass}`}>
+                        <i className={`ph ${data.icon} text-[9rem]`}></i>
+                    </div>
+                    <div className="relative z-10 w-full flex flex-col justify-center h-full">
+                        <h3 className={`font-bold text-3xl text-white ${!isDisabled && 'group-hover:text-indigo-400'} transition-colors tracking-tight`}>
+                            {data.title}
+                        </h3>
+                        <p className={`text-gray-400 text-sm font-medium mt-1 max-w-[85%] leading-tight ${!isDisabled && 'group-hover:text-gray-300'} transition-colors`}>
+                            {data.subtitle}
+                        </p>
+                    </div>
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${data.color} opacity-70 ${isDisabled ? 'grayscale' : 'group-hover:opacity-100'} transition-all`}></div>
+                    
+                    <div className={`absolute top-4 right-4 text-gray-700 ${!isDisabled && 'group-hover:text-white'} transition-colors opacity-0 ${!isDisabled && 'group-hover:opacity-100'}`}>
+                        <i className="ph ph-arrow-up-right text-xl"></i>
+                    </div>
+                </WrapperTag>
+            );
+        });
+
+        const App = () => {
+            const [time, setTime] = useState(new Date());
+            const [greeting, setGreeting] = useState("");
+            const [config, setConfig] = useState(defaultData);
+            const [isConfigOpen, setIsConfigOpen] = useState(false);
+            const [activeTab, setActiveTab] = useState('FIRST'); // Inicia com a nova chave 'FIRST'
+            const [isFabOpen, setIsFabOpen] = useState(false);
+            
+            const [tempConfig, setTempConfig] = useState(defaultData);
+
+            useEffect(() => {
+                const updateClock = () => {
+                    const now = new Date();
+                    setTime(now);
+                    const hour = now.getHours();
+                    if (hour >= 5 && hour < 12) setGreeting("BOM DIA");
+                    else if (hour >= 12 && hour < 18) setGreeting("BOA TARDE");
+                    else setGreeting("BOA NOITE");
+                };
+                updateClock();
+                const timer = setInterval(updateClock, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            useEffect(() => {
+                const savedConfig = localStorage.getItem('merged_site_config_v3'); 
+                if (savedConfig) {
+                    try {
+                        const parsed = JSON.parse(savedConfig);
+                        let merged = { ...defaultData };
+                        
+                        // Mapeamento das chaves antigas para as novas
+                        const keyMap = {
+                            watched: 'FIRST',
+                            seasonal: 'SECOND',
+                            txt: 'THIRD',
+                            sequels: 'FOURTH',
+                            mylist: 'FIFTH',
+                            ranks: 'SIXTH'
+                        };
+
+                        Object.keys(parsed).forEach(oldKey => {
+                            const newKey = keyMap[oldKey] || oldKey; // Usa a nova chave se existir, senão usa a antiga
+                            if (merged[newKey]) {
+                                merged[newKey] = { ...merged[newKey], ...parsed[oldKey] };
+                                if (merged[newKey].visible === undefined) merged[newKey].visible = true;
+                                if (merged[newKey].enabled === undefined) merged[newKey].enabled = true;
+                            }
+                        });
+                        
+                        setConfig(merged);
+                        setTempConfig(merged);
+                    } catch (e) { console.error("Erro config", e); }
+                }
+                if (window.lucide) window.lucide.createIcons();
+            }, []);
+
+            const saveConfig = useCallback(() => {
+                localStorage.setItem('merged_site_config_v3', JSON.stringify(tempConfig));
+                setConfig(tempConfig);
+                setIsConfigOpen(false);
+            }, [tempConfig]);
+
+            const openConfig = () => {
+                setTempConfig(config);
+                setActiveTab(Object.keys(config)[0] || 'FIRST'); // Define a primeira chave como ativa
+                setIsConfigOpen(true);
+            };
+
+            const updateItem = useCallback((key, field, value) => {
+                setTempConfig(prev => ({
+                    ...prev,
+                    [key]: { ...prev[key], [field]: value }
+                }));
+            }, []);
+
+            const toggleEnabled = useCallback((key) => {
+                setTempConfig(prev => ({
+                    ...prev,
+                    [key]: { ...prev[key], enabled: !prev[key].enabled }
+                }));
+            }, []);
+
+            const dateString = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+            const formattedDate = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+
+            return (
+                <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-10">
+                    
+                    {/* Background com animações mantidas */}
+                    <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
+                        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/30 rounded-full filter blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-900/20 rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    {/* Menu Flutuante com animações mantidas */}
+                    <div className="fixed bottom-1 right-2 z-50 flex flex-col items-center gap-2">
+                        <button 
+                            onClick={() => { openConfig(); setIsFabOpen(false); }}
+                            className={`group p-3 rounded-full bg-ap-accent text-white shadow-lg hover:bg-indigo-500 transition-all duration-300 transform border border-white/5 ${
+                                isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-75 pointer-events-none'
+                            }`}
+                            title="Configurar"
+                        >
+                            <LucideIcon name="settings" size={20} className="transition-transform duration-700 ease-in-out group-hover:rotate-180" />
+                        </button>
+                        <button 
+                            onClick={() => setIsFabOpen(!isFabOpen)}
+                            className={`p-2 transition-all duration-300 ${isFabOpen ? 'rotate-180 text-white opacity-100' : 'rotate-0 text-white/30 hover:text-white'}`}
+                        >
+                            <LucideIcon name="chevron-up" size={32} />
+                        </button>
+                    </div>
+                    
+                    <main className="w-full max-w-4xl z-10 p-4">
+                        <header className="text-center mb-16 animate-float select-none">
+                            <div className="text-indigo-400 font-black tracking-tighter uppercase text-5xl md:text-7xl mb-2 leading-none">
+                                {greeting}
+                            </div>
+                            <h1 className="text-2xl md:text-4xl font-bold text-white/80 tracking-widest mb-4" style={{ fontFamily: 'Inter' }}>
+                                {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </h1>
+                            <p className="text-sm md:text-base text-gray-500 font-bold uppercase tracking-[0.2em]">
+                                {formattedDate}
+                            </p>
+                        </header>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                            {Object.entries(config).map(([key, item]) => (
+                                item.visible && (
+                                    <LinkCardSite2 
+                                        key={key}
+                                        data={item}
+                                    />
+                                )
+                            ))}
+                        </div>
+                    </main>
+
+                    {/* MODAL CONFIGURAÇÃO - COMPACTO */}
+                    {isConfigOpen && (
+                        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-3">
+                            <div className="config-modal rounded-xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[580px] max-h-[90vh]">
+                                
+                                {/* Sidebar compacta */}
+                                <div className="w-full md:w-60 config-sidebar flex flex-col">
+                                    <div className="p-4 border-b border-[#2a2a2a]">
+                                        <h2 className="text-base font-bold text-white">Configurações</h2>
+                                        <p className="text-xs text-gray-500">Selecione um link</p>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-2">
+                                        {Object.entries(tempConfig).map(([key, item]) => (
+                                            <SidebarItem 
+                                                key={key}
+                                                id={key}
+                                                item={item}
+                                                isActive={activeTab === key}
+                                                onClick={setActiveTab}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="p-2 border-t border-[#2a2a2a]">
+                                        <div className="text-xs text-gray-500 text-center">
+                                            {Object.keys(tempConfig).filter(k => tempConfig[k].enabled).length} de {Object.keys(tempConfig).length} ativos
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Form compacto */}
+                                <div className="flex-1 flex flex-col bg-gradient-to-b from-gray-900 to-black">
+                                    {/* Header */}
+                                    <div className="p-4 border-b border-[#2a2a2a] bg-gray-900/50">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2 rounded ${tempConfig[activeTab].color} bg-opacity-20`}>
+                                                    <i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-white`}></i>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-white">{tempConfig[activeTab].title}</h3>
+                                                    <p className="text-xs text-gray-400">{tempConfig[activeTab].subtitle}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Status toggle */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-right">
+                                                    <div className={`text-xs font-bold ${tempConfig[activeTab].enabled ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {tempConfig[activeTab].enabled ? 'On' : 'Off'}
+                                                    </div>
+                                                </div>
+                                                <div 
+                                                    className={`toggle-switch ${tempConfig[activeTab].enabled ? 'active' : ''}`}
+                                                    onClick={() => toggleEnabled(activeTab)}
+                                                    title={tempConfig[activeTab].enabled ? 'Desativar' : 'Ativar'}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Conteúdo compacto */}
+                                    <div className="flex-1 p-4 overflow-y-auto">
+                                        <div className="space-y-4">
+                                            {/* Título e Subtítulo lado a lado */}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                                                        TÍTULO
+                                                    </label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={tempConfig[activeTab].title} 
+                                                        onChange={(e) => updateItem(activeTab, 'title', e.target.value)}
+                                                        className="custom-input w-full rounded px-3 py-2 text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                                                        SUBTÍTULO
+                                                    </label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={tempConfig[activeTab].subtitle} 
+                                                        onChange={(e) => updateItem(activeTab, 'subtitle', e.target.value)}
+                                                        className="custom-input w-full rounded px-3 py-2 text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Ícone */}
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                                                    ÍCONE
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        value={tempConfig[activeTab].icon} 
+                                                        onChange={(e) => updateItem(activeTab, 'icon', e.target.value)}
+                                                        placeholder="ph-star"
+                                                        className="custom-input flex-1 rounded px-3 py-2 text-sm"
+                                                    />
+                                                    <div className="p-1.5 bg-gray-800 rounded">
+                                                        <i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-indigo-400`}></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* URL */}
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                                                    URL
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    value={tempConfig[activeTab].url} 
+                                                    onChange={(e) => updateItem(activeTab, 'url', e.target.value)}
+                                                    className="custom-input w-full rounded px-3 py-2 text-sm"
+                                                />
+                                                <div className="mt-1 text-xs text-gray-500">
+                                                    URLs podem ser locais (ex: pagina.html) ou externas
+                                                </div>
+                                            </div>
+
+                                            {/* Prévia */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="text-xs font-semibold text-gray-400 uppercase">
+                                                        PRÉVIA
+                                                    </label>
+                                                </div>
+                                                <div className="p-3 bg-gray-900/50 rounded border border-gray-800">
+                                                    <div className="bg-[#121212] border border-[#222] p-4 rounded-lg flex flex-col justify-center relative overflow-hidden h-24">
+                                                        <div className={`absolute -right-4 -bottom-6 opacity-10 ${tempConfig[activeTab].color.replace('bg-', 'text-')}`}>
+                                                            <i className={`ph ${tempConfig[activeTab].icon} text-7xl`}></i>
+                                                        </div>
+                                                        <div className="relative z-10">
+                                                            <h3 className="font-bold text-xl text-white">{tempConfig[activeTab].title}</h3>
+                                                            <p className="text-xs text-gray-400">{tempConfig[activeTab].subtitle}</p>
+                                                        </div>
+                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${tempConfig[activeTab].color} opacity-70`}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="p-3 border-t border-[#2a2a2a] bg-gray-900/50 flex justify-between items-center">
+                                        <button 
+                                            onClick={() => setIsConfigOpen(false)} 
+                                            className="text-xs text-gray-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded hover:bg-gray-800/50"
+                                        >
+                                            <i className="ph ph-x text-xs"></i>
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            onClick={saveConfig} 
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded text-xs font-bold flex items-center gap-1"
+                                        >
+                                            <i className="ph ph-check text-xs"></i>
+                                            Salvar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

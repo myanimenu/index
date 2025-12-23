@@ -51,7 +51,7 @@
             outline: none;
         }
 
-        /* Toggle Switch melhorado */
+        /* Toggle Switch */
         .toggle-switch {
             width: 44px;
             height: 24px;
@@ -88,7 +88,6 @@
             border-color: #6366f1;
         }
         
-        /* Animações mantidas apenas para o site principal */
         @keyframes blob {
             0%, 100% { transform: translate(0, 0) scale(1); }
             30% { transform: translate(-20px, 30px) scale(1.1); }
@@ -113,14 +112,20 @@
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* Efeitos simples de hover */
-        .hover-lift {
-            transition: transform 0.1s;
-        }
-        .hover-lift:hover {
-            transform: translateY(-1px);
+        /* Animação de clique ativo para os botões FAB */
+        .fab-active-press:active {
+            transform: scale(0.9) !important;
         }
 
+        /* Rotação da Engrenagem no Hover */
+        .gear-spin:hover i, .gear-spin:hover svg {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
     </style>
 
@@ -147,7 +152,7 @@
         const { useState, useEffect, useCallback, memo } = React;
 
         const defaultData = {
-            FIRST: { // Antigo: watched
+            FIRST: { 
                 title: "watched-animes",
                 subtitle: "version-x",
                 url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched",
@@ -156,7 +161,7 @@
                 visible: true, 
                 enabled: true
             },
-            SECOND: { // Antigo: seasonal
+            SECOND: { 
                 title: "seasonalist",
                 subtitle: "version-ii",
                 url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal",
@@ -165,7 +170,7 @@
                 visible: true,
                 enabled: true
             },
-            THIRD: { // Antigo: txt
+            THIRD: { 
                 title: "myhtmlist",
                 subtitle: "version-viii",
                 url: "myhtmlist.html", 
@@ -174,7 +179,7 @@
                 visible: true,
                 enabled: true
             },
-            FOURTH: { // Antigo: sequels
+            FOURTH: { 
                 title: "sequelist",
                 subtitle: "version-i",
                 url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329",
@@ -183,7 +188,7 @@
                 visible: true,
                 enabled: true
             },
-            FIFTH: { // Antigo: mylist
+            FIFTH: { 
                 title: "my-list",
                 subtitle: "version-v",
                 url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896",
@@ -192,7 +197,7 @@
                 visible: true,
                 enabled: true
             },
-            SIXTH: { // Antigo: ranks
+            SIXTH: { 
                 title: "my-ranks-lists",
                 subtitle: "version-vii",
                 url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking",
@@ -213,7 +218,7 @@
         const SidebarItem = memo(({ id, item, isActive, onClick }) => (
             <button
                 onClick={() => onClick(id)}
-                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between hover-lift ${
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-all ${
                     isActive 
                     ? 'bg-gradient-to-r from-indigo-900/30 to-indigo-900/10 text-white border-l-2 border-indigo-500' 
                     : 'text-gray-400 hover:bg-gray-900/30 hover:text-gray-300'
@@ -224,7 +229,7 @@
                         <i className={`ph-bold ${item.icon} text-sm text-white`}></i>
                     </div>
                     <div className="text-left">
-                        <span className="font-medium text-xs capitalize">{id}</span>
+                        <span className="font-bold text-[10px] uppercase tracking-wider">{id.replace('link_', 'Custom ')}</span>
                         <div className="text-[10px] text-gray-500 truncate max-w-[80px]">{item.title}</div>
                     </div>
                 </div>
@@ -234,11 +239,8 @@
 
         const LinkCardSite2 = memo(({ data, isPreview = false }) => {
             const iconColorClass = data.color ? data.color.replace('bg-', 'text-') : 'text-gray-500';
-            
             const isDisabled = !data.enabled && !isPreview; 
-            
             const WrapperTag = isDisabled ? 'div' : 'a';
-            
             const WrapperProps = isDisabled ? { 
                 title: "Indisponível no momento",
                 className: `group bg-[#121212] border border-[#222] p-6 rounded-xl flex flex-col justify-center relative overflow-hidden h-32 opacity-50 cursor-not-allowed transition-all duration-300`,
@@ -276,9 +278,8 @@
             const [greeting, setGreeting] = useState("");
             const [config, setConfig] = useState(defaultData);
             const [isConfigOpen, setIsConfigOpen] = useState(false);
-            const [activeTab, setActiveTab] = useState('FIRST'); // Inicia com a nova chave 'FIRST'
+            const [activeTab, setActiveTab] = useState('FIRST'); 
             const [isFabOpen, setIsFabOpen] = useState(false);
-            
             const [tempConfig, setTempConfig] = useState(defaultData);
 
             useEffect(() => {
@@ -301,31 +302,29 @@
                     try {
                         const parsed = JSON.parse(savedConfig);
                         let merged = { ...defaultData };
-                        
-                        // Mapeamento das chaves antigas para as novas
                         const keyMap = {
-                            watched: 'FIRST',
-                            seasonal: 'SECOND',
-                            txt: 'THIRD',
-                            sequels: 'FOURTH',
-                            mylist: 'FIFTH',
-                            ranks: 'SIXTH'
+                            watched: 'FIRST', seasonal: 'SECOND', txt: 'THIRD',
+                            sequels: 'FOURTH', mylist: 'FIFTH', ranks: 'SIXTH'
                         };
 
                         Object.keys(parsed).forEach(oldKey => {
-                            const newKey = keyMap[oldKey] || oldKey; // Usa a nova chave se existir, senão usa a antiga
+                            const newKey = keyMap[oldKey] || oldKey; 
                             if (merged[newKey]) {
                                 merged[newKey] = { ...merged[newKey], ...parsed[oldKey] };
-                                if (merged[newKey].visible === undefined) merged[newKey].visible = true;
-                                if (merged[newKey].enabled === undefined) merged[newKey].enabled = true;
+                            } else {
+                                merged[newKey] = parsed[oldKey];
                             }
                         });
                         
+                        Object.keys(merged).forEach(k => {
+                            if (merged[k].visible === undefined) merged[k].visible = true;
+                            if (merged[k].enabled === undefined) merged[k].enabled = true;
+                        });
+
                         setConfig(merged);
                         setTempConfig(merged);
                     } catch (e) { console.error("Erro config", e); }
                 }
-                if (window.lucide) window.lucide.createIcons();
             }, []);
 
             const saveConfig = useCallback(() => {
@@ -336,9 +335,64 @@
 
             const openConfig = () => {
                 setTempConfig(config);
-                setActiveTab(Object.keys(config)[0] || 'FIRST'); // Define a primeira chave como ativa
+                if (!config[activeTab]) {
+                    setActiveTab(Object.keys(config)[0] || 'FIRST');
+                }
                 setIsConfigOpen(true);
             };
+
+            const addNewLink = () => {
+                const ordinals = [
+                    "ZERO", "FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH", "SEVENTH", "EIGHTH", "NINTH", "TENTH",
+                    "ELEVENTH", "TWELFTH", "THIRTEENTH", "FOURTEENTH", "FIFTEENTH", "SIXTEENTH", "SEVENTEENTH", "EIGHTEENTH", "NINETEENTH", "TWENTIETH"
+                ];
+                
+                let nextIndex = 1;
+                let newKey = "";
+                while(true) {
+                    const candidate = ordinals[nextIndex] || `ITEM_${nextIndex}`;
+                    if (!config[candidate]) {
+                        newKey = candidate;
+                        break;
+                    }
+                    nextIndex++;
+                }
+
+                const colorPool = [
+                    "bg-red-600", "bg-orange-600", "bg-amber-600", "bg-yellow-600", "bg-lime-600",
+                    "bg-green-600", "bg-emerald-600", "bg-teal-600", "bg-cyan-600", "bg-sky-600",
+                    "bg-blue-600", "bg-indigo-600", "bg-violet-600", "bg-purple-600", "bg-fuchsia-600",
+                    "bg-pink-600", "bg-rose-600", "bg-slate-600"
+                ];
+                
+                const usedColors = Object.values(config).map(item => item.color);
+                const availableColors = colorPool.filter(c => !usedColors.includes(c));
+                const randomColor = availableColors.length > 0 
+                    ? availableColors[Math.floor(Math.random() * availableColors.length)]
+                    : colorPool[Math.floor(Math.random() * colorPool.length)];
+
+                const newItem = {
+                    title: "Novo Link", subtitle: "Clique para editar", url: "https://google.com",
+                    icon: "ph-link", color: randomColor, visible: true, enabled: true
+                };
+                
+                const newConfig = { ...config, [newKey]: newItem };
+                setConfig(newConfig);
+                setTempConfig(newConfig);
+                setActiveTab(newKey);
+                setIsConfigOpen(true);
+                setIsFabOpen(false);
+            };
+
+            const deleteItem = useCallback((keyToDelete) => {
+                if (Object.keys(tempConfig).length <= 1) return;
+                const newTemp = { ...tempConfig };
+                delete newTemp[keyToDelete];
+                setTempConfig(newTemp);
+                if (activeTab === keyToDelete) {
+                    setActiveTab(Object.keys(newTemp)[0]);
+                }
+            }, [tempConfig, activeTab]);
 
             const updateItem = useCallback((key, field, value) => {
                 setTempConfig(prev => ({
@@ -354,32 +408,44 @@
                 }));
             }, []);
 
-            const dateString = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-            const formattedDate = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+            const formattedDate = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase());
 
             return (
                 <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-10">
                     
-                    {/* Background com animações mantidas */}
+                    {/* Background */}
                     <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
                         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/30 rounded-full filter blur-[100px] animate-blob"></div>
                         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-900/20 rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
                     </div>
 
-                    {/* Menu Flutuante com animações mantidas */}
+                    {/* Menu Flutuante */}
                     <div className="fixed bottom-1 right-2 z-50 flex flex-col items-center gap-2">
+                        {/* Botão ADICIONAR (+) */}
+                        <button 
+                            onClick={addNewLink}
+                            className={`group p-3 rounded-full bg-ap-accent text-white shadow-lg transition-all duration-300 transform border border-white/5 fab-active-press ${
+                                isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-16 opacity-0 scale-75 pointer-events-none'
+                            } hover:bg-indigo-500`}
+                            title="Adicionar Novo"
+                        >
+                            <LucideIcon name="plus" size={20} className="stroke-[3] group-hover:rotate-90 transition-transform duration-300" />
+                        </button>
+
+                        {/* Botão CONFIG (Engrenagem) */}
                         <button 
                             onClick={() => { openConfig(); setIsFabOpen(false); }}
-                            className={`group p-3 rounded-full bg-ap-accent text-white shadow-lg hover:bg-indigo-500 transition-all duration-300 transform border border-white/5 ${
+                            className={`group p-3 rounded-full bg-ap-accent text-white shadow-lg transition-all duration-300 transform border border-white/5 fab-active-press gear-spin ${
                                 isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-75 pointer-events-none'
-                            }`}
-                            title="Configurar"
+                            } hover:bg-indigo-500`}
+                            title="Configurações"
                         >
-                            <LucideIcon name="settings" size={20} className="transition-transform duration-700 ease-in-out group-hover:rotate-180" />
+                            <LucideIcon name="settings" size={20} className="transition-transform duration-500 ease-in-out" />
                         </button>
+
                         <button 
                             onClick={() => setIsFabOpen(!isFabOpen)}
-                            className={`p-2 transition-all duration-300 ${isFabOpen ? 'rotate-180 text-white opacity-100' : 'rotate-0 text-white/30 hover:text-white'}`}
+                            className={`p-2 transition-all duration-300 active:scale-90 ${isFabOpen ? 'rotate-180 text-white opacity-100' : 'rotate-0 text-white/30 hover:text-white'}`}
                         >
                             <LucideIcon name="chevron-up" size={32} />
                         </button>
@@ -390,7 +456,7 @@
                             <div className="text-indigo-400 font-black tracking-tighter uppercase text-5xl md:text-7xl mb-2 leading-none">
                                 {greeting}
                             </div>
-                            <h1 className="text-2xl md:text-4xl font-bold text-white/80 tracking-widest mb-4" style={{ fontFamily: 'Inter' }}>
+                            <h1 className="text-2xl md:text-4xl font-bold text-white/80 tracking-widest mb-4">
                                 {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </h1>
                             <p className="text-sm md:text-base text-gray-500 font-bold uppercase tracking-[0.2em]">
@@ -400,22 +466,16 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                             {Object.entries(config).map(([key, item]) => (
-                                item.visible && (
-                                    <LinkCardSite2 
-                                        key={key}
-                                        data={item}
-                                    />
-                                )
+                                item.visible && <LinkCardSite2 key={key} data={item} />
                             ))}
                         </div>
                     </main>
 
-                    {/* MODAL CONFIGURAÇÃO - COMPACTO */}
+                    {/* MODAL CONFIGURAÇÃO */}
                     {isConfigOpen && (
                         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-3">
                             <div className="config-modal rounded-xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[580px] max-h-[90vh]">
                                 
-                                {/* Sidebar compacta */}
                                 <div className="w-full md:w-60 config-sidebar flex flex-col">
                                     <div className="p-4 border-b border-[#2a2a2a]">
                                         <h2 className="text-base font-bold text-white">Configurações</h2>
@@ -424,11 +484,8 @@
                                     <div className="flex-1 overflow-y-auto p-2">
                                         {Object.entries(tempConfig).map(([key, item]) => (
                                             <SidebarItem 
-                                                key={key}
-                                                id={key}
-                                                item={item}
-                                                isActive={activeTab === key}
-                                                onClick={setActiveTab}
+                                                key={key} id={key} item={item}
+                                                isActive={activeTab === key} onClick={setActiveTab}
                                             />
                                         ))}
                                     </div>
@@ -439,139 +496,84 @@
                                     </div>
                                 </div>
 
-                                {/* Form compacto */}
                                 <div className="flex-1 flex flex-col bg-gradient-to-b from-gray-900 to-black">
-                                    {/* Header */}
-                                    <div className="p-4 border-b border-[#2a2a2a] bg-gray-900/50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded ${tempConfig[activeTab].color} bg-opacity-20`}>
-                                                    <i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-white`}></i>
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-bold text-white">{tempConfig[activeTab].title}</h3>
-                                                    <p className="text-xs text-gray-400">{tempConfig[activeTab].subtitle}</p>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Status toggle */}
-                                            <div className="flex items-center gap-2">
-                                                <div className="text-right">
-                                                    <div className={`text-xs font-bold ${tempConfig[activeTab].enabled ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {tempConfig[activeTab].enabled ? 'On' : 'Off'}
+                                    {tempConfig[activeTab] && (
+                                    <>
+                                        <div className="p-4 border-b border-[#2a2a2a] bg-gray-900/50">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded ${tempConfig[activeTab].color} bg-opacity-20`}>
+                                                        <i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-white`}></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg font-bold text-white truncate max-w-[150px]">{tempConfig[activeTab].title}</h3>
+                                                        <p className="text-xs text-gray-400 truncate max-w-[150px]">{tempConfig[activeTab].subtitle}</p>
                                                     </div>
                                                 </div>
-                                                <div 
-                                                    className={`toggle-switch ${tempConfig[activeTab].enabled ? 'active' : ''}`}
-                                                    onClick={() => toggleEnabled(activeTab)}
-                                                    title={tempConfig[activeTab].enabled ? 'Desativar' : 'Ativar'}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Conteúdo compacto */}
-                                    <div className="flex-1 p-4 overflow-y-auto">
-                                        <div className="space-y-4">
-                                            {/* Título e Subtítulo lado a lado */}
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                                                        TÍTULO
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={tempConfig[activeTab].title} 
-                                                        onChange={(e) => updateItem(activeTab, 'title', e.target.value)}
-                                                        className="custom-input w-full rounded px-3 py-2 text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                                                        SUBTÍTULO
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={tempConfig[activeTab].subtitle} 
-                                                        onChange={(e) => updateItem(activeTab, 'subtitle', e.target.value)}
-                                                        className="custom-input w-full rounded px-3 py-2 text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Ícone */}
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                                                    ÍCONE
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    <input 
-                                                        type="text" 
-                                                        value={tempConfig[activeTab].icon} 
-                                                        onChange={(e) => updateItem(activeTab, 'icon', e.target.value)}
-                                                        placeholder="ph-star"
-                                                        className="custom-input flex-1 rounded px-3 py-2 text-sm"
-                                                    />
-                                                    <div className="p-1.5 bg-gray-800 rounded">
-                                                        <i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-indigo-400`}></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* URL */}
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                                                    URL
-                                                </label>
-                                                <input 
-                                                    type="text" 
-                                                    value={tempConfig[activeTab].url} 
-                                                    onChange={(e) => updateItem(activeTab, 'url', e.target.value)}
-                                                    className="custom-input w-full rounded px-3 py-2 text-sm"
-                                                />
-                                                <div className="mt-1 text-xs text-gray-500">
-                                                    URLs podem ser locais (ex: pagina.html) ou externas
-                                                </div>
-                                            </div>
-
-                                            {/* Prévia */}
-                                            <div>
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <label className="text-xs font-semibold text-gray-400 uppercase">
-                                                        PRÉVIA
-                                                    </label>
-                                                </div>
-                                                <div className="p-3 bg-gray-900/50 rounded border border-gray-800">
-                                                    <div className="bg-[#121212] border border-[#222] p-4 rounded-lg flex flex-col justify-center relative overflow-hidden h-24">
-                                                        <div className={`absolute -right-4 -bottom-6 opacity-10 ${tempConfig[activeTab].color.replace('bg-', 'text-')}`}>
-                                                            <i className={`ph ${tempConfig[activeTab].icon} text-7xl`}></i>
+                                                <div className="flex items-center gap-3">
+                                                    <button onClick={() => deleteItem(activeTab)} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-900/20 rounded-full transition-colors">
+                                                        <i className="ph-bold ph-trash text-lg"></i>
+                                                    </button>
+                                                    <div className="h-6 w-px bg-gray-700"></div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`text-xs font-bold ${tempConfig[activeTab].enabled ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {tempConfig[activeTab].enabled ? 'ON' : 'OFF'}
                                                         </div>
-                                                        <div className="relative z-10">
-                                                            <h3 className="font-bold text-xl text-white">{tempConfig[activeTab].title}</h3>
-                                                            <p className="text-xs text-gray-400">{tempConfig[activeTab].subtitle}</p>
-                                                        </div>
-                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${tempConfig[activeTab].color} opacity-70`}></div>
+                                                        <div className={`toggle-switch ${tempConfig[activeTab].enabled ? 'active' : ''}`} onClick={() => toggleEnabled(activeTab)}></div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Footer */}
+                                        <div className="flex-1 p-4 overflow-y-auto">
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">TÍTULO</label>
+                                                        <input type="text" value={tempConfig[activeTab].title} onChange={(e) => updateItem(activeTab, 'title', e.target.value)} className="custom-input w-full rounded px-3 py-2 text-sm" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">SUBTÍTULO</label>
+                                                        <input type="text" value={tempConfig[activeTab].subtitle} onChange={(e) => updateItem(activeTab, 'subtitle', e.target.value)} className="custom-input w-full rounded px-3 py-2 text-sm" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">ÍCONE (Phosphor)</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input type="text" value={tempConfig[activeTab].icon} onChange={(e) => updateItem(activeTab, 'icon', e.target.value)} className="custom-input flex-1 rounded px-3 py-2 text-sm" />
+                                                        <div className="p-1.5 bg-gray-800 rounded"><i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-indigo-400`}></i></div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">URL</label>
+                                                    <input type="text" value={tempConfig[activeTab].url} onChange={(e) => updateItem(activeTab, 'url', e.target.value)} className="custom-input w-full rounded px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-400 uppercase block mb-2">PRÉVIA</label>
+                                                    <div className="p-3 bg-gray-900/50 rounded border border-gray-800">
+                                                        <div className="bg-[#121212] border border-[#222] p-4 rounded-lg flex flex-col justify-center relative overflow-hidden h-24">
+                                                            <div className={`absolute -right-4 -bottom-6 opacity-10 ${tempConfig[activeTab].color.replace('bg-', 'text-')}`}>
+                                                                <i className={`ph ${tempConfig[activeTab].icon} text-7xl`}></i>
+                                                            </div>
+                                                            <div className="relative z-10">
+                                                                <h3 className="font-bold text-xl text-white truncate">{tempConfig[activeTab].title}</h3>
+                                                                <p className="text-xs text-gray-400 truncate">{tempConfig[activeTab].subtitle}</p>
+                                                            </div>
+                                                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${tempConfig[activeTab].color} opacity-70`}></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                    )}
+
                                     <div className="p-3 border-t border-[#2a2a2a] bg-gray-900/50 flex justify-between items-center">
-                                        <button 
-                                            onClick={() => setIsConfigOpen(false)} 
-                                            className="text-xs text-gray-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded hover:bg-gray-800/50"
-                                        >
-                                            <i className="ph ph-x text-xs"></i>
-                                            Cancelar
+                                        <button onClick={() => setIsConfigOpen(false)} className="text-xs text-gray-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded hover:bg-gray-800/50">
+                                            <i className="ph ph-x text-xs"></i> Cancelar
                                         </button>
-                                        <button 
-                                            onClick={saveConfig} 
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded text-xs font-bold flex items-center gap-1"
-                                        >
-                                            <i className="ph ph-check text-xs"></i>
-                                            Salvar
+                                        <button onClick={saveConfig} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded text-xs font-bold flex items-center gap-1">
+                                            <i className="ph ph-check text-xs"></i> Salvar
                                         </button>
                                     </div>
                                 </div>

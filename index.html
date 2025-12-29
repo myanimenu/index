@@ -1,7 +1,3 @@
-<!-- > Sempre que houver mudanças no site, o número da versão deve ser atualizada. 
-Atualizações Grandes (Como adicionar uma nova função ou ter uma Mudança na Interface aumentam em +0.07 até +0.15 dependendo da atualização)
-Atualizações Pequenas (Como mudar um icone, mudar uma animação ou uma cor de alguma coisa aumentam em +0.02 até 0.06)
-Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão. -->
 <html lang="pt-br">
 
 <head>
@@ -121,6 +117,19 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
     .horizontal-scrollbar::-webkit-scrollbar {
       height: 7px;
     }
+
+    /* Transição suave para o painel de configurações extras */
+    .advanced-settings-enter {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+
+    .advanced-settings-enter.show {
+      max-height: 200px;
+      opacity: 1;
+    }
   </style>
 
   <script>
@@ -142,7 +151,7 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
 
 <body>
   <div class="fixed bottom-2 left-3 font-mono text-[9px] text-white/20 tracking-widest select-none pointer-events-none mix-blend-screen">
-    v1.02.92 - layout adjusted
+    v1.02.54
   </div>
 
   <div id="root"></div>
@@ -348,7 +357,6 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
 
       const formattedDate = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase());
 
-      // Gradiente suave de texto dependendo do horário
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
@@ -397,19 +405,15 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
           </div>
 
           <main className="w-full max-w-4xl z-10 p-4">
-            {/* Saudação com Tamanhos Ajustados */}
             <header className="flex flex-col items-center justify-center mb-16 animate-float select-none relative group text-center">
-                {/* Saudação em Tamanho Original (Destaque) */}
                 <div className={`font-black tracking-tighter uppercase text-6xl md:text-7xl mb-3 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient}`}>
                     {greeting}
                 </div>
                 
-                {/* Horário em Tamanho Menor (Ajustado) */}
                 <h1 className="text-2xl md:text-4xl font-black text-white tracking-widest mb-4 opacity-80">
                     {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </h1>
                 
-                {/* Data Sem Ícone */}
                 <div className="px-6 py-1.5 rounded-full border border-white/5 bg-white/[0.03] backdrop-blur-sm">
                     <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">
                     {formattedDate}
@@ -434,7 +438,7 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
                       <button
                         key={key}
                         onClick={() => setActiveTab(key)}
-                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-none ${activeTab === key ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-[#111] hover:text-gray-300'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 ${activeTab === key ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
                       >
                         <i className={`ph-bold ${item.icon} text-sm`}></i>
                         <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">{item.title}</span>
@@ -457,16 +461,20 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                          <button onClick={() => deleteItem(activeTab)} className="text-gray-600 hover:text-red-500 flex items-center gap-1">
-                            <i className="ph-bold ph-trash text-xs"></i>
-                            <span className="text-[9px] font-bold uppercase">Excluir</span>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => deleteItem(activeTab)} 
+                            className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group"
+                            title="Excluir"
+                          >
+                            <i className="ph-bold ph-trash text-lg group-hover:scale-110"></i>
                           </button>
+                          
                           <div
-                            className={`w-8 h-4 rounded-full relative cursor-pointer ${tempConfig[activeTab].enabled ? 'bg-green-500' : 'bg-[#333]'}`}
+                            className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors duration-500 ease-in-out border border-white/5 ${tempConfig[activeTab].enabled ? 'bg-green-600' : 'bg-red-600'}`}
                             onClick={() => toggleEnabled(activeTab)}
                           >
-                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${tempConfig[activeTab].enabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                            <div className={`absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${tempConfig[activeTab].enabled ? 'left-[18px]' : 'left-[3px]'}`}></div>
                           </div>
                         </div>
                       </div>
@@ -517,42 +525,47 @@ Não remova esta mensagem, pois ela indica a necessidade de atualizar a versão.
                                 onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                                 className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
                             >
-                                <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'}`}></i>
+                                <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'} transition-transform duration-300 ${showAdvancedSettings ? 'rotate-180' : ''}`}></i>
                                 {showAdvancedSettings ? 'Menos configurações' : 'Mais configurações'}
                             </button>
                         </div>
 
-                        {showAdvancedSettings && (
-                            <div className="space-y-2 pt-1 max-h-28 overflow-y-auto custom-scrollbar pr-2">
-                               <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
-                               <div className="flex flex-wrap gap-2 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3 justify-center">
-                                 {availableColors.map((colorClass) => (
-                                   <button
-                                     key={colorClass}
-                                     onClick={() => updateItem(activeTab, 'color', colorClass)}
-                                     title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
-                                     className={`w-6 h-6 rounded-full ${colorClass} transition-all duration-200 ${
-                                       tempConfig[activeTab].color === colorClass 
-                                         ? 'ring-2 ring-white scale-110 shadow-lg' 
-                                         : 'opacity-40 hover:opacity-100 hover:scale-105'
-                                     }`}
-                                   />
-                                 ))}
+                        <div className={`advanced-settings-enter ${showAdvancedSettings ? 'show' : ''}`}>
+                            <div className="space-y-3 pt-2">
+                               <div className="space-y-1">
+                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
+                                 <div className="flex flex-wrap gap-2 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3 justify-center">
+                                   {availableColors.map((colorClass) => (
+                                     <button
+                                       key={colorClass}
+                                       onClick={() => updateItem(activeTab, 'color', colorClass)}
+                                       title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
+                                       className={`w-6 h-6 rounded-full ${colorClass} transition-all duration-200 ${
+                                         tempConfig[activeTab].color === colorClass 
+                                           ? 'ring-2 ring-white scale-110 shadow-lg' 
+                                           : 'opacity-40 hover:opacity-100 hover:scale-105'
+                                       }`}
+                                     />
+                                   ))}
+                                 </div>
                                </div>
                             </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
                 <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center gap-3">
-                  <button onClick={() => setIsConfigOpen(false)} className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-2">
+                  <button 
+                    onClick={() => setIsConfigOpen(false)} 
+                    className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-4 py-2 transition-all duration-300 rounded hover:bg-white/5"
+                  >
                     Descartar
                   </button>
                   <button
                     onClick={saveConfig}
-                    className="bg-white/10 text-white border border-white/5 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95"
+                    className="bg-white/5 text-gray-500 border border-white/5 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all duration-300 hover:bg-white/10 hover:text-white hover:shadow-lg"
                   >
                     SALVAR
                   </button>

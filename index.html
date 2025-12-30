@@ -1,10 +1,22 @@
-<html lang="pt-br">
+<!-- Sempre que houver qualquer alteração no site, o número da versão deve ser atualizado.
 
+> Atualizações grandes  
+  (ex.: adição de novas funcionalidades ou mudanças significativas na interface)  
+  → a versão deve ser aumentada de acordo com a complexidade da atualização.
+
+> Atualizações pequenas  
+  (ex.: troca de ícones, ajustes de animações ou mudanças de cores)  
+  → aumentar a versão entre +0.01 e +0.2.
+
+Não remova esta mensagem. Ela serve como lembrete para manter o versionamento do site sempre atualizado.
+-->
+
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>myanimenu</title>
-  <link rel="shortcut icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRM9U4oWgjV_LNl7Kfd0NqTKweF_weeKF8OFg&s" type="image/x-icon">
+  <link rel="shortcut icon" href="myanimenu_pfp.png" type="image/x-icon">
 
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -31,9 +43,12 @@
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
     }
 
-    /* --- Links --- */
+    /* --- Links (Novo Visual) --- */
     .card-hover {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: linear-gradient(145deg, #121212 0%, #0c0c0c 100%);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
     /* Desativar hover no modo ultra leve */
@@ -44,9 +59,9 @@
     }
 
     body:not(.ultra-light) .card-hover:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.6);
-      border-color: #333;
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
     @keyframes blob {
@@ -151,7 +166,7 @@
 
 <body>
   <div class="fixed bottom-2 left-3 font-mono text-[9px] text-white/20 tracking-widest select-none pointer-events-none mix-blend-screen">
-    v1.02.54
+    v1.05.00
   </div>
 
   <div id="root"></div>
@@ -159,31 +174,25 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, memo } = React;
 
-    const availableColors = [
-      "bg-blue-600",
-      "bg-sky-600",
-      "bg-cyan-600",
-      "bg-teal-600",
-      "bg-green-600",
-      "bg-yellow-500",
-      "bg-orange-600",
-      "bg-red-600",
-      "bg-rose-600",
-      "bg-pink-600",
-      "bg-fuchsia-600",
-      "bg-purple-600",
-      "bg-indigo-500",
-      "bg-white"
+    // --- CONFIGURAÇÃO PADRÃO (BACK-END LOGIC) ---
+    // Estrutura de Array moderna em vez de Objeto com chaves fixas
+    const defaultData = [
+      { id: '1', title: "watched-animes", subtitle: "version-x", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true },
+      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true },
+      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "myhtmlist.html", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true },
+      { id: '4', title: "sequelist", subtitle: "version-i", url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true },
+      { id: '5', title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "bg-indigo-500", visible: true, enabled: true },
+      { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true },
     ];
 
-    const defaultData = {
-      FIRST: { title: "watched-animes", subtitle: "version-x", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true },
-      SECOND: { title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true },
-      THIRD: { title: "myhtmlist", subtitle: "version-viii", url: "myhtmlist.html", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true },
-      FOURTH: { title: "sequelist", subtitle: "version-i", url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true },
-      FIFTH: { title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "bg-indigo-500", visible: true, enabled: true },
-      SIXTH: { title: "my-ranks-lists", subtitle: "version-vii", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true },
-    };
+    const availableColors = [
+      "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
+      "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
+      "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500", "bg-white"
+    ];
+
+    // Helper para gerar IDs únicos
+    const generateId = () => Math.random().toString(36).substr(2, 9);
 
     const LucideIcon = memo(({ name, size = 24, className = "" }) => {
       useEffect(() => {
@@ -193,51 +202,100 @@
     });
 
     const LinkCardSite2 = memo(({ data, isPreview = false }) => {
-      const iconColorClass = data.color ? data.color.replace('bg-', 'text-') : 'text-gray-500';
+      const textColorClass = data.color ? data.color.replace('bg-', 'text-') : 'text-gray-500';
       const isDisabled = !data.enabled && !isPreview;
       const WrapperTag = isDisabled ? 'div' : 'a';
+      
       const WrapperProps = isDisabled ? {
         title: "Indisponível no momento",
-        className: `group bg-[#121212] border border-[#222] p-6 rounded-xl flex flex-col justify-center relative overflow-hidden h-32 opacity-50 cursor-not-allowed transition-all duration-300`,
+        className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between border border-[#222] bg-[#0c0c0c] opacity-50 cursor-not-allowed`,
       } : {
         href: data.url,
         target: "_blank",
         rel: "noopener noreferrer",
-        className: `group bg-[#121212] border border-[#222] p-6 rounded-xl flex flex-col justify-center relative overflow-hidden h-32 card-hover cursor-pointer transition-all duration-300`,
+        className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between card-hover cursor-pointer`,
       };
 
       return (
         <WrapperTag {...WrapperProps}>
-          <div className={`absolute -right-6 -bottom-8 opacity-10 ${isDisabled ? 'grayscale' : 'group-hover:opacity-25'} transition-all duration-500 group-hover:scale-110 group-hover:-rotate-12 ${iconColorClass}`}>
-            <i className={`ph ${data.icon} text-[9rem]`}></i>
+          <div className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-500 ${data.color} mix-blend-screen`}></div>
+          <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} transition-all duration-700 ease-out z-0`}>
+             <i className={`ph-fill ${data.icon} text-[8rem] ${textColorClass}`}></i>
           </div>
-          <div className="relative z-10 w-full flex flex-col justify-center h-full">
-            <h3 className={`font-bold text-3xl text-white ${!isDisabled && 'group-hover:text-white'} transition-colors tracking-tight`}>
-              {data.title}
-            </h3>
-            <p className={`text-gray-400 text-sm font-medium mt-1 max-w-[85%] leading-tight ${!isDisabled && 'group-hover:text-gray-300'} transition-colors`}>
-              {data.subtitle}
-            </p>
+          <div className={`absolute top-5 right-5 text-gray-700 ${!isDisabled && 'group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1'} transition-all duration-300 z-10`}>
+            <i className="ph-bold ph-arrow-up-right text-lg"></i>
           </div>
-          <div className={`absolute left-0 top-0 bottom-0 w-1 ${data.color} opacity-70 ${isDisabled ? 'grayscale' : 'group-hover:opacity-100'} transition-all`}></div>
-          <div className={`absolute top-4 right-4 text-gray-700 ${!isDisabled && 'group-hover:text-white'} transition-colors opacity-0 ${!isDisabled && 'group-hover:opacity-100'}`}>
-            <i className="ph ph-arrow-up-right text-xl"></i>
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            <div>
+              <div className="mb-2">
+                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ${!isDisabled && 'group-hover:text-gray-400'} transition-colors`}>
+                  {data.subtitle}
+                </span>
+              </div>
+              <h3 className={`font-bold text-2xl md:text-3xl text-white tracking-tight leading-none ${!isDisabled && 'group-hover:text-white'} transition-colors`}>
+                {data.title}
+              </h3>
+            </div>
+            <div className={`w-8 h-1 rounded-full ${data.color} opacity-20 ${!isDisabled && 'group-hover:w-16 group-hover:opacity-80'} transition-all duration-500`}></div>
           </div>
         </WrapperTag>
       );
     });
 
     const App = () => {
+      // Estado para Dados do Site (Configuração)
+      const [items, setItems] = useState(defaultData);
+      
+      // Estados de UI
       const [time, setTime] = useState(new Date());
       const [greeting, setGreeting] = useState("");
-      const [config, setConfig] = useState(defaultData);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
-      const [activeTab, setActiveTab] = useState('FIRST');
+      const [activeTabId, setActiveTabId] = useState(null); // Agora usa ID
       const [isFabOpen, setIsFabOpen] = useState(false);
-      const [tempConfig, setTempConfig] = useState(defaultData);
+      const [tempItems, setTempItems] = useState(defaultData); // Estado temporário para edição
       const [isUltraLight, setIsUltraLight] = useState(true);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
+      // --- BACK-END: Lógica de Carregamento e Migração ---
+      useEffect(() => {
+        const loadConfig = () => {
+          // Tenta carregar a versão nova (Array)
+          const savedConfigV4 = localStorage.getItem('site_config_v4');
+          if (savedConfigV4) {
+            try {
+              setItems(JSON.parse(savedConfigV4));
+              setTempItems(JSON.parse(savedConfigV4));
+              return;
+            } catch (e) { console.error("Erro ao carregar v4", e); }
+          }
+
+          // Fallback: Tenta carregar a versão antiga (Objeto) e migrar
+          const savedConfigV3 = localStorage.getItem('merged_site_config_v3');
+          if (savedConfigV3) {
+            try {
+              const oldData = JSON.parse(savedConfigV3);
+              // Converte Objeto {KEY: val} para Array [{id, ...val}]
+              const migratedData = Object.entries(oldData).map(([key, val]) => ({
+                ...val,
+                id: generateId(), // Gera novo ID para compatibilidade
+                // Garante campos obrigatórios
+                visible: val.visible !== undefined ? val.visible : true,
+                enabled: val.enabled !== undefined ? val.enabled : true,
+                color: val.color || "bg-gray-600",
+                icon: val.icon || "ph-link"
+              }));
+              
+              setItems(migratedData);
+              setTempItems(migratedData);
+              // Salva já na nova estrutura
+              localStorage.setItem('site_config_v4', JSON.stringify(migratedData));
+            } catch (e) { console.error("Erro na migração v3->v4", e); }
+          }
+        };
+        loadConfig();
+      }, []);
+
+      // --- Lógica do Relógio ---
       useEffect(() => {
         const updateClock = () => {
           const now = new Date();
@@ -252,115 +310,102 @@
         return () => clearInterval(timer);
       }, []);
 
+      // --- Lógica Visual Global ---
       useEffect(() => {
-        if (isUltraLight) {
-          document.body.classList.add('ultra-light');
-        } else {
-          document.body.classList.remove('ultra-light');
-        }
+        if (isUltraLight) document.body.classList.add('ultra-light');
+        else document.body.classList.remove('ultra-light');
       }, [isUltraLight]);
 
-      useEffect(() => {
-        const savedConfig = localStorage.getItem('merged_site_config_v3');
-        if (savedConfig) {
-          try {
-            const parsed = JSON.parse(savedConfig);
-            let merged = { ...defaultData };
-            const keyMap = {
-              watched: 'FIRST', seasonal: 'SECOND', txt: 'THIRD',
-              sequels: 'FOURTH', mylist: 'FIFTH', ranks: 'SIXTH'
-            };
-
-            Object.keys(parsed).forEach(oldKey => {
-              const newKey = keyMap[oldKey] || oldKey;
-              if (merged[newKey]) {
-                merged[newKey] = { ...merged[newKey], ...parsed[oldKey] };
-              } else {
-                merged[newKey] = parsed[oldKey];
-              }
-            });
-
-            Object.keys(merged).forEach(k => {
-              if (merged[k].visible === undefined) merged[k].visible = true;
-              if (merged[k].enabled === undefined) merged[k].enabled = true;
-            });
-
-            setConfig(merged);
-            setTempConfig(merged);
-          } catch (e) { console.error("Erro config", e); }
-        }
-      }, []);
-
+      // --- BACK-END: Operações CRUD (Create, Read, Update, Delete) ---
+      
       const saveConfig = useCallback(() => {
-        localStorage.setItem('merged_site_config_v3', JSON.stringify(tempConfig));
-        setConfig(tempConfig);
+        localStorage.setItem('site_config_v4', JSON.stringify(tempItems));
+        setItems(tempItems);
         setIsConfigOpen(false);
-      }, [tempConfig]);
+      }, [tempItems]);
 
       const openConfig = () => {
-        setTempConfig(config);
-        if (!config[activeTab]) {
-          setActiveTab(Object.keys(config)[0] || 'FIRST');
+        setTempItems(JSON.parse(JSON.stringify(items))); // Deep copy para evitar mutação direta
+        if (items.length > 0 && !activeTabId) {
+          setActiveTabId(items[0].id);
+        } else if (items.length > 0 && !items.find(i => i.id === activeTabId)) {
+          setActiveTabId(items[0].id);
         }
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
       };
 
       const addNewLink = () => {
-        const ordinals = ["ZERO", "FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH", "SEVENTH", "EIGHTH", "NINTH", "TENTH"];
-        let nextIndex = 1;
-        let newKey = "";
-        while (true) {
-          const candidate = ordinals[nextIndex] || `ITEM_${nextIndex}`;
-          if (!config[candidate]) { newKey = candidate; break; }
-          nextIndex++;
-        }
         const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-indigo-600", "bg-pink-600"];
         const newItem = {
-          title: "Novo Link", subtitle: "Clique para editar", url: "https://google.com",
-          icon: "ph-link", color: colorPool[Math.floor(Math.random() * colorPool.length)], visible: true, enabled: true
+          id: generateId(),
+          title: "Novo Link", 
+          subtitle: "Clique para editar", 
+          url: "https://google.com",
+          icon: "ph-link", 
+          color: colorPool[Math.floor(Math.random() * colorPool.length)], 
+          visible: true, 
+          enabled: true
         };
-        const newConfig = { ...config, [newKey]: newItem };
         
-        setConfig(newConfig);
-        setTempConfig(newConfig); 
-        setActiveTab(newKey); 
+        // Adiciona ao estado real e temporário imediatamente para feedback instantâneo
+        const newItemsList = [...items, newItem];
+        setItems(newItemsList);
+        setTempItems(newItemsList);
+        setActiveTabId(newItem.id);
+        
+        // Salva persistência
+        localStorage.setItem('site_config_v4', JSON.stringify(newItemsList));
         
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
         setIsFabOpen(false);
       };
 
-      const deleteItem = useCallback((keyToDelete) => {
-        if (Object.keys(tempConfig).length <= 1) return;
-        const newTemp = { ...tempConfig };
-        delete newTemp[keyToDelete];
-        setTempConfig(newTemp);
-        if (activeTab === keyToDelete) {
-          setActiveTab(Object.keys(newTemp)[0]);
+      const deleteItem = useCallback((idToDelete) => {
+        if (tempItems.length <= 1) return; // Impede deletar último item
+        const newTemp = tempItems.filter(item => item.id !== idToDelete);
+        setTempItems(newTemp);
+        
+        // Ajusta aba ativa se deletamos a atual
+        if (activeTabId === idToDelete) {
+          setActiveTabId(newTemp[0]?.id || null);
         }
-      }, [tempConfig, activeTab]);
+      }, [tempItems, activeTabId]);
 
-      const updateItem = useCallback((key, field, value) => {
-        setTempConfig(prev => ({
-          ...prev,
-          [key]: { ...prev[key], [field]: value }
-        }));
+      const updateItem = useCallback((id, field, value) => {
+        setTempItems(prev => prev.map(item => 
+          item.id === id ? { ...item, [field]: value } : item
+        ));
       }, []);
 
-      const toggleEnabled = useCallback((key) => {
-        setTempConfig(prev => ({
-          ...prev,
-          [key]: { ...prev[key], enabled: !prev[key].enabled }
-        }));
+      const toggleEnabled = useCallback((id) => {
+        setTempItems(prev => prev.map(item => 
+          item.id === id ? { ...item, enabled: !item.enabled } : item
+        ));
       }, []);
 
+      const moveItem = useCallback((id, direction) => {
+        const index = tempItems.findIndex(i => i.id === id);
+        if (index < 0) return;
+        if (direction === 'left' && index === 0) return;
+        if (direction === 'right' && index === tempItems.length - 1) return;
+
+        const newItems = [...tempItems];
+        const swapIndex = direction === 'left' ? index - 1 : index + 1;
+        [newItems[index], newItems[swapIndex]] = [newItems[swapIndex], newItems[index]];
+        setTempItems(newItems);
+      }, [tempItems]);
+
+      // --- Helpers de Renderização ---
       const formattedDate = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase());
-
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
           : "from-yellow-200 via-orange-200 to-yellow-200";
+
+      // Encontrar item ativo para edição
+      const activeItem = tempItems.find(i => i.id === activeTabId) || tempItems[0];
 
       return (
         <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-10">
@@ -421,24 +466,24 @@
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {Object.entries(config).map(([key, item]) => (
-                item.visible && <LinkCardSite2 key={key} data={item} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+              {items.map((item) => (
+                item.visible && <LinkCardSite2 key={item.id} data={item} />
               ))}
             </div>
           </main>
 
-          {isConfigOpen && (
+          {isConfigOpen && activeItem && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-2">
               <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl w-full max-w-2xl flex flex-col max-h-[85vh] h-auto shadow-2xl overflow-hidden">
                 
                 <div className="flex-none flex items-center bg-[#050505] border-b border-[#1a1a1a] h-12 pr-2">
                   <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-scrollbar horizontal-scrollbar h-full px-2">
-                    {Object.entries(tempConfig).map(([key, item]) => (
+                    {tempItems.map((item) => (
                       <button
-                        key={key}
-                        onClick={() => setActiveTab(key)}
-                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 ${activeTab === key ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+                        key={item.id}
+                        onClick={() => setActiveTabId(item.id)}
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 ${activeTabId === item.id ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
                       >
                         <i className={`ph-bold ${item.icon} text-sm`}></i>
                         <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">{item.title}</span>
@@ -448,112 +493,111 @@
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0a0a]">
-                  {tempConfig[activeTab] && (
-                    <div className="flex flex-col">
-                      <div className="px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a] bg-[#0c0c0c]">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg ${tempConfig[activeTab].color} flex items-center justify-center bg-opacity-20`}>
-                            <i className={`ph-bold ${tempConfig[activeTab].icon} text-base text-white`}></i>
-                          </div>
-                          <div className="flex flex-col leading-none">
-                            <h3 className="text-[11px] font-black text-white uppercase tracking-widest">{tempConfig[activeTab].title}</h3>
-                            <span className="text-[8px] text-gray-600 font-bold uppercase mt-1">Editando Link</span>
-                          </div>
+                  <div className="flex flex-col">
+                    <div className="px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a] bg-[#0c0c0c]">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg ${activeItem.color} flex items-center justify-center bg-opacity-20`}>
+                          <i className={`ph-bold ${activeItem.icon} text-base text-white`}></i>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => deleteItem(activeTab)} 
-                            className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group"
-                            title="Excluir"
-                          >
-                            <i className="ph-bold ph-trash text-lg group-hover:scale-110"></i>
-                          </button>
-                          
-                          <div
-                            className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors duration-500 ease-in-out border border-white/5 ${tempConfig[activeTab].enabled ? 'bg-green-600' : 'bg-red-600'}`}
-                            onClick={() => toggleEnabled(activeTab)}
-                          >
-                            <div className={`absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${tempConfig[activeTab].enabled ? 'left-[18px]' : 'left-[3px]'}`}></div>
-                          </div>
+                        <div className="flex flex-col leading-none">
+                          <h3 className="text-[11px] font-black text-white uppercase tracking-widest">{activeItem.title}</h3>
+                          <span className="text-[8px] text-gray-600 font-bold uppercase mt-1">Editando Link</span>
                         </div>
                       </div>
 
-                      <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Título</label>
-                            <input
-                              type="text"
-                              value={tempConfig[activeTab].title}
-                              onChange={(e) => updateItem(activeTab, 'title', e.target.value)}
-                              className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Subtítulo</label>
-                            <input
-                              type="text"
-                              value={tempConfig[activeTab].subtitle}
-                              onChange={(e) => updateItem(activeTab, 'subtitle', e.target.value)}
-                              className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20"
-                            />
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2">
 
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Classe do Ícone (Phosphor)</label>
-                          <input
-                            type="text"
-                            value={tempConfig[activeTab].icon}
-                            onChange={(e) => updateItem(activeTab, 'icon', e.target.value)}
-                            className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20 font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Link de Destino (URL)</label>
-                          <input
-                            type="text"
-                            value={tempConfig[activeTab].url}
-                            onChange={(e) => updateItem(activeTab, 'url', e.target.value)}
-                            className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-gray-400 outline-none focus:border-white/20"
-                          />
-                        </div>
-
-                        <div className="pt-2">
-                            <button
-                                onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                                className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
-                            >
-                                <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'} transition-transform duration-300 ${showAdvancedSettings ? 'rotate-180' : ''}`}></i>
-                                {showAdvancedSettings ? 'Menos configurações' : 'Mais configurações'}
-                            </button>
-                        </div>
-
-                        <div className={`advanced-settings-enter ${showAdvancedSettings ? 'show' : ''}`}>
-                            <div className="space-y-3 pt-2">
-                               <div className="space-y-1">
-                                 <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
-                                 <div className="flex flex-wrap gap-2 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3 justify-center">
-                                   {availableColors.map((colorClass) => (
-                                     <button
-                                       key={colorClass}
-                                       onClick={() => updateItem(activeTab, 'color', colorClass)}
-                                       title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
-                                       className={`w-6 h-6 rounded-full ${colorClass} transition-all duration-200 ${
-                                         tempConfig[activeTab].color === colorClass 
-                                           ? 'ring-2 ring-white scale-110 shadow-lg' 
-                                           : 'opacity-40 hover:opacity-100 hover:scale-105'
-                                       }`}
-                                     />
-                                   ))}
-                                 </div>
-                               </div>
-                            </div>
+                        <button 
+                          onClick={() => deleteItem(activeItem.id)} 
+                          className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group"
+                          title="Excluir"
+                        >
+                          <i className="ph-bold ph-trash text-lg group-hover:scale-110"></i>
+                        </button>
+                        
+                        <div
+                          className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors duration-500 ease-in-out border border-white/5 ${activeItem.enabled ? 'bg-green-600' : 'bg-red-600'}`}
+                          onClick={() => toggleEnabled(activeItem.id)}
+                        >
+                          <div className={`absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${activeItem.enabled ? 'left-[18px]' : 'left-[3px]'}`}></div>
                         </div>
                       </div>
                     </div>
-                  )}
+
+                    <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Título</label>
+                          <input
+                            type="text"
+                            value={activeItem.title}
+                            onChange={(e) => updateItem(activeItem.id, 'title', e.target.value)}
+                            className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Subtítulo</label>
+                          <input
+                            type="text"
+                            value={activeItem.subtitle}
+                            onChange={(e) => updateItem(activeItem.id, 'subtitle', e.target.value)}
+                            className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Classe do Ícone (Phosphor)</label>
+                        <input
+                          type="text"
+                          value={activeItem.icon}
+                          onChange={(e) => updateItem(activeItem.id, 'icon', e.target.value)}
+                          className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20 font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Link de Destino (URL)</label>
+                        <input
+                          type="text"
+                          value={activeItem.url}
+                          onChange={(e) => updateItem(activeItem.id, 'url', e.target.value)}
+                          className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-gray-400 outline-none focus:border-white/20"
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                          <button
+                              onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                              className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+                          >
+                              <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'} transition-transform duration-300 ${showAdvancedSettings ? 'rotate-180' : ''}`}></i>
+                              {showAdvancedSettings ? 'Menos configurações' : 'Mais configurações'}
+                          </button>
+                      </div>
+
+                      <div className={`advanced-settings-enter ${showAdvancedSettings ? 'show' : ''}`}>
+                          <div className="space-y-3 pt-2">
+                             <div className="space-y-1">
+                               <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
+                               <div className="flex flex-wrap gap-2 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3 justify-center">
+                                 {availableColors.map((colorClass) => (
+                                   <button
+                                     key={colorClass}
+                                     onClick={() => updateItem(activeItem.id, 'color', colorClass)}
+                                     title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
+                                     className={`w-6 h-6 rounded-full ${colorClass} transition-all duration-200 ${
+                                       activeItem.color === colorClass 
+                                         ? 'ring-2 ring-white scale-110 shadow-lg' 
+                                         : 'opacity-40 hover:opacity-100 hover:scale-105'
+                                     }`}
+                                   />
+                                 ))}
+                               </div>
+                             </div>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center gap-3">

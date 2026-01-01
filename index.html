@@ -1,11 +1,11 @@
 <!-- Sempre que houver qualquer alteração no site, o número da versão deve ser atualizado.
 
-> Atualizações grandes  
-  (ex.: adição de novas funcionalidades ou mudanças significativas na interface)  
+> Atualizações grandes 
+  (ex.: adição de novas funcionalidades ou mudanças significativas na interface) 
   → a versão deve ser aumentada de acordo com a complexidade da atualização.
 
-> Atualizações pequenas  
-  (ex.: troca de ícones, ajustes de animações ou mudanças de cores)  
+> Atualizações pequenas 
+  (ex.: troca de ícones, ajustes de animações ou mudanças de cores) 
   → aumentar a versão entre +0.01 e +0.2.
 
 Não remova esta mensagem. Ela serve como lembrete para manter o versionamento do site sempre atualizado.
@@ -96,6 +96,25 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
       animation: none !important;
     }
 
+    /* Animação de Slide para Paginação */
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .slide-in-right {
+      animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    
+    .slide-in-left {
+      animation: slideInLeft 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
@@ -166,7 +185,7 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
 
 <body>
   <div class="fixed bottom-2 left-3 font-mono text-[9px] text-white/20 tracking-widest select-none pointer-events-none mix-blend-screen">
-    v1.05.00
+    v1.06.01
   </div>
 
   <div id="root"></div>
@@ -175,7 +194,6 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
     const { useState, useEffect, useCallback, memo } = React;
 
     // --- CONFIGURAÇÃO PADRÃO (BACK-END LOGIC) ---
-    // Estrutura de Array moderna em vez de Objeto com chaves fixas
     const defaultData = [
       { id: '1', title: "watched-animes", subtitle: "version-x", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true },
       { id: '2', title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true },
@@ -191,8 +209,8 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
       "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500", "bg-white"
     ];
 
-    // Helper para gerar IDs únicos
     const generateId = () => Math.random().toString(36).substr(2, 9);
+    const ITEMS_PER_PAGE = 6;
 
     const LucideIcon = memo(({ name, size = 24, className = "" }) => {
       useEffect(() => {
@@ -202,7 +220,10 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
     });
 
     const LinkCardSite2 = memo(({ data, isPreview = false }) => {
-      const textColorClass = data.color ? data.color.replace('bg-', 'text-') : 'text-gray-500';
+      const textColorClass = data.color 
+        ? data.color.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
+        : 'text-gray-400';
+        
       const isDisabled = !data.enabled && !isPreview;
       const WrapperTag = isDisabled ? 'div' : 'a';
       
@@ -222,7 +243,7 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
           <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} transition-all duration-700 ease-out z-0`}>
              <i className={`ph-fill ${data.icon} text-[8rem] ${textColorClass}`}></i>
           </div>
-          <div className={`absolute top-5 right-5 text-gray-700 ${!isDisabled && 'group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1'} transition-all duration-300 z-10`}>
+          <div className={`absolute top-5 right-5 text-gray-500 ${!isDisabled && 'group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1'} transition-all duration-300 z-10`}>
             <i className="ph-bold ph-arrow-up-right text-lg"></i>
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
@@ -250,46 +271,27 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
       const [time, setTime] = useState(new Date());
       const [greeting, setGreeting] = useState("");
       const [isConfigOpen, setIsConfigOpen] = useState(false);
-      const [activeTabId, setActiveTabId] = useState(null); // Agora usa ID
+      const [activeTabId, setActiveTabId] = useState(null);
       const [isFabOpen, setIsFabOpen] = useState(false);
-      const [tempItems, setTempItems] = useState(defaultData); // Estado temporário para edição
+      const [tempItems, setTempItems] = useState(defaultData);
       const [isUltraLight, setIsUltraLight] = useState(true);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+      
+      // Paginação
+      const [currentPage, setCurrentPage] = useState(0);
+      const [animDirection, setAnimDirection] = useState('slide-in-right');
 
       // --- BACK-END: Lógica de Carregamento e Migração ---
       useEffect(() => {
         const loadConfig = () => {
-          // Tenta carregar a versão nova (Array)
           const savedConfigV4 = localStorage.getItem('site_config_v4');
           if (savedConfigV4) {
             try {
-              setItems(JSON.parse(savedConfigV4));
-              setTempItems(JSON.parse(savedConfigV4));
+              const loaded = JSON.parse(savedConfigV4);
+              setItems(loaded);
+              setTempItems(loaded);
               return;
             } catch (e) { console.error("Erro ao carregar v4", e); }
-          }
-
-          // Fallback: Tenta carregar a versão antiga (Objeto) e migrar
-          const savedConfigV3 = localStorage.getItem('merged_site_config_v3');
-          if (savedConfigV3) {
-            try {
-              const oldData = JSON.parse(savedConfigV3);
-              // Converte Objeto {KEY: val} para Array [{id, ...val}]
-              const migratedData = Object.entries(oldData).map(([key, val]) => ({
-                ...val,
-                id: generateId(), // Gera novo ID para compatibilidade
-                // Garante campos obrigatórios
-                visible: val.visible !== undefined ? val.visible : true,
-                enabled: val.enabled !== undefined ? val.enabled : true,
-                color: val.color || "bg-gray-600",
-                icon: val.icon || "ph-link"
-              }));
-              
-              setItems(migratedData);
-              setTempItems(migratedData);
-              // Salva já na nova estrutura
-              localStorage.setItem('site_config_v4', JSON.stringify(migratedData));
-            } catch (e) { console.error("Erro na migração v3->v4", e); }
           }
         };
         loadConfig();
@@ -316,7 +318,7 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
         else document.body.classList.remove('ultra-light');
       }, [isUltraLight]);
 
-      // --- BACK-END: Operações CRUD (Create, Read, Update, Delete) ---
+      // --- BACK-END: Operações CRUD ---
       
       const saveConfig = useCallback(() => {
         localStorage.setItem('site_config_v4', JSON.stringify(tempItems));
@@ -325,7 +327,7 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
       }, [tempItems]);
 
       const openConfig = () => {
-        setTempItems(JSON.parse(JSON.stringify(items))); // Deep copy para evitar mutação direta
+        setTempItems(JSON.parse(JSON.stringify(items)));
         if (items.length > 0 && !activeTabId) {
           setActiveTabId(items[0].id);
         } else if (items.length > 0 && !items.find(i => i.id === activeTabId)) {
@@ -348,13 +350,15 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
           enabled: true
         };
         
-        // Adiciona ao estado real e temporário imediatamente para feedback instantâneo
         const newItemsList = [...items, newItem];
         setItems(newItemsList);
         setTempItems(newItemsList);
         setActiveTabId(newItem.id);
         
-        // Salva persistência
+        // Pula para a última página onde o novo item está
+        const newTotalPages = Math.ceil(newItemsList.filter(i => i.visible).length / ITEMS_PER_PAGE);
+        setCurrentPage(newTotalPages - 1);
+        
         localStorage.setItem('site_config_v4', JSON.stringify(newItemsList));
         
         setShowAdvancedSettings(false);
@@ -363,11 +367,10 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
       };
 
       const deleteItem = useCallback((idToDelete) => {
-        if (tempItems.length <= 1) return; // Impede deletar último item
+        if (tempItems.length <= 1) return;
         const newTemp = tempItems.filter(item => item.id !== idToDelete);
         setTempItems(newTemp);
         
-        // Ajusta aba ativa se deletamos a atual
         if (activeTabId === idToDelete) {
           setActiveTabId(newTemp[0]?.id || null);
         }
@@ -385,26 +388,43 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
         ));
       }, []);
 
-      const moveItem = useCallback((id, direction) => {
-        const index = tempItems.findIndex(i => i.id === id);
-        if (index < 0) return;
-        if (direction === 'left' && index === 0) return;
-        if (direction === 'right' && index === tempItems.length - 1) return;
+      // --- Paginação Logic ---
+      const visibleItems = items.filter(item => item.visible);
+      const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
+      
+      const nextPage = () => {
+        if (currentPage < totalPages - 1) {
+          setAnimDirection('slide-in-right');
+          setCurrentPage(prev => prev + 1);
+        }
+      };
 
-        const newItems = [...tempItems];
-        const swapIndex = direction === 'left' ? index - 1 : index + 1;
-        [newItems[index], newItems[swapIndex]] = [newItems[swapIndex], newItems[index]];
-        setTempItems(newItems);
-      }, [tempItems]);
+      const prevPage = () => {
+        if (currentPage > 0) {
+          setAnimDirection('slide-in-left');
+          setCurrentPage(prev => prev - 1);
+        }
+      };
+      
+      // Ajustar página se items forem deletados
+      useEffect(() => {
+        if (currentPage >= totalPages && totalPages > 0) {
+          setCurrentPage(totalPages - 1);
+        }
+      }, [items, totalPages, currentPage]);
 
-      // --- Helpers de Renderização ---
+      const currentDisplayItems = visibleItems.slice(
+        currentPage * ITEMS_PER_PAGE, 
+        (currentPage + 1) * ITEMS_PER_PAGE
+      );
+
+      // Helpers de Renderização
       const formattedDate = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase());
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
           : "from-yellow-200 via-orange-200 to-yellow-200";
 
-      // Encontrar item ativo para edição
       const activeItem = tempItems.find(i => i.id === activeTabId) || tempItems[0];
 
       return (
@@ -449,7 +469,7 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
             </button>
           </div>
 
-          <main className="w-full max-w-4xl z-10 p-4">
+          <main className="w-full max-w-4xl z-10 p-4 relative">
             <header className="flex flex-col items-center justify-center mb-16 animate-float select-none relative group text-center">
                 <div className={`font-black tracking-tighter uppercase text-6xl md:text-7xl mb-3 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient}`}>
                     {greeting}
@@ -466,11 +486,62 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-              {items.map((item) => (
-                item.visible && <LinkCardSite2 key={item.id} data={item} />
-              ))}
+            {/* Container Relativo para as Setas */}
+            <div className="relative">
+              {/* Seta Esquerda (Anterior) */}
+              {currentPage > 0 && (
+                <button 
+                  onClick={prevPage}
+                  className="absolute left-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
+                  title="Anterior"
+                >
+                  <i className="ph-bold ph-caret-left text-3xl"></i>
+                </button>
+              )}
+
+              {/* Grid de Links com Animação */}
+              <div key={currentPage} className={`grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 ${animDirection}`}>
+                {currentDisplayItems.map((item) => (
+                  <LinkCardSite2 key={item.id} data={item} />
+                ))}
+              </div>
+
+              {/* Seta Direita (Próximo) */}
+              {currentPage < totalPages - 1 && (
+                <button 
+                  onClick={nextPage}
+                  className="absolute right-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
+                  title="Próximo"
+                >
+                  <i className="ph-bold ph-caret-right text-3xl"></i>
+                </button>
+              )}
+              
+              {/* Paginação Mobile (Pontos) */}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-6 md:hidden">
+                   {Array.from({ length: totalPages }).map((_, idx) => (
+                     <div 
+                        key={idx}
+                        onClick={() => setCurrentPage(idx)}
+                        className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? 'w-6 bg-white' : 'w-2 bg-white/20'}`}
+                     />
+                   ))}
+                </div>
+              )}
             </div>
+            
+            {/* Indicador de Página Desktop */}
+            {totalPages > 1 && (
+                <div className="hidden md:flex justify-center mt-8 gap-1">
+                   {Array.from({ length: totalPages }).map((_, idx) => (
+                     <div 
+                        key={idx}
+                        className={`h-1 rounded-full transition-all duration-500 ${currentPage === idx ? 'w-12 bg-white/40' : 'w-2 bg-white/10'}`}
+                     />
+                   ))}
+                </div>
+            )}
           </main>
 
           {isConfigOpen && activeItem && (

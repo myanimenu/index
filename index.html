@@ -1,16 +1,3 @@
-<!-- Sempre que houver qualquer alteração no site, o número da versão deve ser atualizado.
-
-> Atualizações grandes 
-  (ex.: adição de novas funcionalidades ou mudanças significativas na interface) 
-  → a versão deve ser aumentada de acordo com a complexidade da atualização.
-
-> Atualizações pequenas 
-  (ex.: troca de ícones, ajustes de animações ou mudanças de cores) 
-  → aumentar a versão entre +0.01 e +0.2.
-
-Não remova esta mensagem. Ela serve como lembrete para manter o versionamento do site sempre atualizado.
--->
-
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
@@ -30,17 +17,10 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #050505; /* Cor base mais escura */
+      background-color: #0a0a0a;
       color: #f8fafc;
       margin: 0;
       overflow-x: hidden;
-    }
-
-    /* --- BACKGROUND NOVO --- */
-    .bg-grid {
-      background-size: 40px 40px;
-      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     }
 
     /* --- UI --- */
@@ -73,12 +53,12 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
 
     @keyframes blob {
       0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(30px, -50px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
+      30% { transform: translate(-20px, 30px) scale(1.1); }
+      60% { transform: translate(30px, -20px) scale(0.9); }
     }
 
     .animate-blob {
-      animation: blob 15s infinite cubic-bezier(0.4, 0, 0.2, 1); /* Animação mais lenta e suave */
+      animation: blob 10s infinite cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Parar animação no modo ultra leve */
@@ -88,9 +68,6 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
 
     .animation-delay-2000 {
       animation-delay: 2s;
-    }
-    .animation-delay-4000 {
-      animation-delay: 4s;
     }
 
     @keyframes float {
@@ -174,12 +151,6 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
       max-height: 200px;
       opacity: 1;
     }
-    
-    /* Estilo para item sendo arrastado */
-    .dragging-tab {
-      opacity: 0.5;
-      border: 1px dashed #555;
-    }
   </style>
 
   <script>
@@ -200,10 +171,6 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
 </head>
 
 <body>
-  <div class="fixed bottom-2 left-3 font-mono text-[9px] text-white/20 tracking-widest select-none pointer-events-none mix-blend-screen z-50">
-    v1.07.00
-  </div>
-
   <div id="root"></div>
 
   <script type="text/babel">
@@ -404,29 +371,6 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
         ));
       }, []);
 
-      // --- DRAG AND DROP LOGIC (Tabs) ---
-      const handleTabDragStart = (e, index) => {
-        e.dataTransfer.setData("itemIndex", index);
-        // Efeito visual opcional para o navegador
-        e.dataTransfer.effectAllowed = "move";
-      };
-
-      const handleTabDrop = (e, dropIndex) => {
-        e.preventDefault();
-        const dragIndex = Number(e.dataTransfer.getData("itemIndex"));
-        
-        // Se soltar no mesmo lugar, não faz nada
-        if (dragIndex === dropIndex) return;
-
-        const newItems = [...tempItems];
-        // Remove o item da posição original
-        const [movedItem] = newItems.splice(dragIndex, 1);
-        // Insere na nova posição
-        newItems.splice(dropIndex, 0, movedItem);
-        
-        setTempItems(newItems);
-      };
-
       // --- Paginação Logic ---
       const visibleItems = items.filter(item => item.visible);
       const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
@@ -468,21 +412,9 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
 
       return (
         <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-10">
-          
-          {/* BACKGROUND ATUALIZADO */}
-          <div className="fixed inset-0 -z-10 bg-[#050505] overflow-hidden">
-            {/* Grid Pattern */}
-            <div className="absolute inset-0 bg-grid opacity-20"></div>
-
-            {/* Ambient Lighting / Vignette */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505/80]"></div>
-            
-            {/* Moving Blobs - Cores mais modernas (Indigo/Roxo/Azul Profundo) */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full filter blur-[100px] animate-blob mix-blend-screen"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-900/10 rounded-full filter blur-[120px] animate-blob animation-delay-2000 mix-blend-screen"></div>
-                <div className="absolute top-[20%] left-[40%] w-[400px] h-[400px] bg-blue-800/5 rounded-full filter blur-[100px] animate-blob animation-delay-4000 mix-blend-screen"></div>
-            </div>
+          <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
+            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full filter blur-[100px] animate-blob"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
           </div>
 
           <div className="fixed bottom-2 right-4 z-50 flex flex-col items-center gap-3">
@@ -573,9 +505,9 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
                 <div className="flex justify-center gap-2 mt-6 md:hidden">
                    {Array.from({ length: totalPages }).map((_, idx) => (
                      <div 
-                       key={idx}
-                       onClick={() => setCurrentPage(idx)}
-                       className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? 'w-6 bg-white' : 'w-2 bg-white/20'}`}
+                        key={idx}
+                        onClick={() => setCurrentPage(idx)}
+                        className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? 'w-6 bg-white' : 'w-2 bg-white/20'}`}
                      />
                    ))}
                 </div>
@@ -587,8 +519,8 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
                 <div className="hidden md:flex justify-center mt-8 gap-1">
                    {Array.from({ length: totalPages }).map((_, idx) => (
                      <div 
-                       key={idx}
-                       className={`h-1 rounded-full transition-all duration-500 ${currentPage === idx ? 'w-12 bg-white/40' : 'w-2 bg-white/10'}`}
+                        key={idx}
+                        className={`h-1 rounded-full transition-all duration-500 ${currentPage === idx ? 'w-12 bg-white/40' : 'w-2 bg-white/10'}`}
                      />
                    ))}
                 </div>
@@ -601,19 +533,14 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
                 
                 <div className="flex-none flex items-center bg-[#050505] border-b border-[#1a1a1a] h-12 pr-2">
                   <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-scrollbar horizontal-scrollbar h-full px-2">
-                    {tempItems.map((item, index) => (
+                    {tempItems.map((item) => (
                       <button
                         key={item.id}
-                        draggable
-                        onDragStart={(e) => handleTabDragStart(e, index)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => handleTabDrop(e, index)}
                         onClick={() => setActiveTabId(item.id)}
-                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 cursor-move ${activeTabId === item.id ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
-                        title="Segure e arraste para o lado para reordenar"
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 ${activeTabId === item.id ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
                       >
-                        <i className={`ph-bold ${item.icon} text-sm pointer-events-none`}></i>
-                        <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap pointer-events-none">{item.title}</span>
+                        <i className={`ph-bold ${item.icon} text-sm`}></i>
+                        <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">{item.title}</span>
                       </button>
                     ))}
                   </div>
@@ -714,61 +641,33 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
                                      title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
                                      className={`w-6 h-6 rounded-full ${colorClass} transition-all duration-200 ${
                                        activeItem.color === colorClass 
-                                         ? 'ring-2 ring-white scale-110' 
-                                         : 'hover:scale-110 opacity-70 hover:opacity-100'
+                                         ? 'ring-2 ring-white scale-110 shadow-lg' 
+                                         : 'opacity-40 hover:opacity-100 hover:scale-105'
                                      }`}
-                                   ></button>
+                                   />
                                  ))}
                                </div>
                              </div>
-                             
-                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Modo de Interface</label>
-                                <div className="flex items-center gap-3 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
-                                   <button
-                                      onClick={() => setIsUltraLight(!isUltraLight)}
-                                      className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${isUltraLight ? 'bg-white text-black' : 'bg-[#222] text-gray-400 hover:text-white'}`}
-                                   >
-                                      Ultra Leve
-                                   </button>
-                                   <button
-                                      onClick={() => setIsUltraLight(!isUltraLight)}
-                                      className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${!isUltraLight ? 'bg-indigo-600 text-white' : 'bg-[#222] text-gray-400 hover:text-white'}`}
-                                   >
-                                      Alta Qualidade
-                                   </button>
-                                </div>
-                                <p className="text-[9px] text-gray-600 px-1 pt-1">
-                                  {isUltraLight ? 'Desativa sombras e animações pesadas para melhor performance.' : 'Ativa todas as animações, desfoques e efeitos visuais.'}
-                                </p>
-                             </div>
                           </div>
                       </div>
-
                     </div>
                   </div>
                 </div>
 
-                <div className="flex-none p-4 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center">
-                   <div className="text-[10px] text-gray-600 font-mono">
-                     {tempItems.length} links • v1.07.00
-                   </div>
-                   <div className="flex gap-3">
-                      <button 
-                        onClick={() => setIsConfigOpen(false)}
-                        className="px-4 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-                      >
-                        CANCELAR
-                      </button>
-                      <button 
-                        onClick={saveConfig}
-                        className="px-6 py-2 rounded-lg text-xs font-bold bg-white text-black hover:bg-gray-200 transition-colors shadow-lg shadow-white/10"
-                      >
-                        SALVAR
-                      </button>
-                   </div>
+                <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center gap-3">
+                  <button 
+                    onClick={() => setIsConfigOpen(false)} 
+                    className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-4 py-2 transition-all duration-300 rounded hover:bg-white/5"
+                  >
+                    Descartar
+                  </button>
+                  <button
+                    onClick={saveConfig}
+                    className="bg-white/5 text-gray-500 border border-white/5 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all duration-300 hover:bg-white/10 hover:text-white hover:shadow-lg"
+                  >
+                    SALVAR
+                  </button>
                 </div>
-
               </div>
             </div>
           )}
@@ -780,4 +679,5 @@ Não remova esta mensagem. Ela serve como lembrete para manter o versionamento d
     root.render(<App />);
   </script>
 </body>
+
 </html>

@@ -38,62 +38,6 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
-    /* Desativar hover no modo ultra leve */
-    body.ultra-light .card-hover:hover {
-      transform: none !important;
-      box-shadow: none !important;
-      border-color: #222 !important;
-    }
-
-    body:not(.ultra-light) .card-hover:hover {
-      transform: translateY(-4px) scale(1.01);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    @keyframes blob {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      30% { transform: translate(-20px, 30px) scale(1.1); }
-      60% { transform: translate(30px, -20px) scale(0.9); }
-    }
-
-    .animate-blob {
-      animation: blob 10s infinite cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Parar animação no modo ultra leve */
-    body.ultra-light .animate-blob {
-      animation: none !important;
-    }
-
-    .animation-delay-2000 {
-      animation-delay: 2s;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-5px); }
-    }
-
-    .animate-float {
-      animation: float 6s ease-in-out infinite;
-    }
-
-    body.ultra-light .animate-float {
-      animation: none !important;
-    }
-
-    /* Animação de Slide para Paginação */
-    @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-    
-    @keyframes slideInLeft {
-      from { opacity: 0; transform: translateX(-20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
     .slide-in-right {
       animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     }
@@ -171,6 +115,7 @@
 </head>
 
 <body>
+
   <div id="root"></div>
 
   <script type="text/babel">
@@ -226,9 +171,7 @@
           <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} transition-all duration-700 ease-out z-0`}>
              <i className={`ph-fill ${data.icon} text-[8rem] ${textColorClass}`}></i>
           </div>
-          <div className={`absolute top-5 right-5 text-gray-500 ${!isDisabled && 'group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1'} transition-all duration-300 z-10`}>
-            <i className="ph-bold ph-arrow-up-right text-lg"></i>
-          </div>
+
           <div className="relative z-10 flex flex-col h-full justify-between">
             <div>
               <div className="mb-2">
@@ -263,6 +206,7 @@
       // Paginação
       const [currentPage, setCurrentPage] = useState(0);
       const [animDirection, setAnimDirection] = useState('slide-in-right');
+      const [draggedId, setDraggedId] = useState(null);
 
       // --- BACK-END: Lógica de Carregamento e Migração ---
       useEffect(() => {
@@ -388,7 +332,24 @@
           setCurrentPage(prev => prev - 1);
         }
       };
-      
+            
+      const moveItem = useCallback((fromId, toId) => {
+        if (fromId === toId) return;
+
+        setTempItems(prev => {
+          const items = [...prev];
+          const fromIndex = items.findIndex(i => i.id === fromId);
+          const toIndex = items.findIndex(i => i.id === toId);
+
+          if (fromIndex === -1 || toIndex === -1) return prev;
+
+          const [moved] = items.splice(fromIndex, 1);
+          items.splice(toIndex, 0, moved);
+
+          return items;
+        });
+      }, []);
+
       // Ajustar página se items forem deletados
       useEffect(() => {
         if (currentPage >= totalPages && totalPages > 0) {
@@ -453,21 +414,27 @@
           </div>
 
           <main className="w-full max-w-4xl z-10 p-4 relative">
-            <header className="flex flex-col items-center justify-center mb-16 animate-float select-none relative group text-center">
-                <div className={`font-black tracking-tighter uppercase text-6xl md:text-7xl mb-3 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient}`}>
-                    {greeting}
-                </div>
-                
-                <h1 className="text-2xl md:text-4xl font-black text-white tracking-widest mb-4 opacity-80">
-                    {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </h1>
-                
-                <div className="px-6 py-1.5 rounded-full border border-white/5 bg-white/[0.03] backdrop-blur-sm">
-                    <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">
-                    {formattedDate}
-                    </p>
-                </div>
-            </header>
+<header className="relative flex flex-col items-center justify-center mb-16 select-none group">
+    {/* Efeito de Glow/Brilho de fundo decorativo */}
+    <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+    {/* Saudação (Gradient Text com Sombra) */}
+    <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl animate-float`}>
+        {greeting}
+    </h1>
+    
+    {/* Horário (Tipografia Monospace para evitar layout shift) */}
+    <div className="relative z-10 text-3xl md:text-5xl font-black text-white/90 tracking-widest mb-6 drop-shadow-lg font-mono variant-numeric-tabular">
+        {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+    </div>
+    
+    {/* Data (Pílula com efeito Glassmorphism aprimorado e hover) */}
+    <div className="relative z-10 px-6 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-lg transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 hover:shadow-purple-500/10 cursor-default">
+        <p className="text-[10px] md:text-xs text-gray-300 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+            {formattedDate}
+        </p>
+    </div>
+</header>
 
             {/* Container Relativo para as Setas */}
             <div className="relative">
@@ -536,11 +503,32 @@
                     {tempItems.map((item) => (
                       <button
                         key={item.id}
+                        draggable
+                        onDragStart={() => setDraggedId(item.id)}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.add('bg-white/10');
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove('bg-white/10');
+                        }}
+                        onDrop={() => {
+                          moveItem(draggedId, item.id);
+                          setDraggedId(null);
+                        }}
+                        onDragEnd={() => setDraggedId(null)}
                         onClick={() => setActiveTabId(item.id)}
-                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 ${activeTabId === item.id ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                          activeTabId === item.id
+                            ? 'bg-white/15 text-white shadow-lg'
+                            : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                        }`}
+                        title="Arraste para reorganizar"
                       >
                         <i className={`ph-bold ${item.icon} text-sm`}></i>
-                        <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">{item.title}</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                          {item.title}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -619,7 +607,7 @@
                         />
                       </div>
 
-                      <div className="pt-2">
+                      <div className="pt-1">
                           <button
                               onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                               className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
@@ -630,23 +618,25 @@
                       </div>
 
                       <div className={`advanced-settings-enter ${showAdvancedSettings ? 'show' : ''}`}>
-                          <div className="space-y-3 pt-2">
+                          <div className="space-y-2 pt-1">
                              <div className="space-y-1">
                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
-                               <div className="flex flex-wrap gap-2 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3 justify-center">
-                                 {availableColors.map((colorClass) => (
-                                   <button
-                                     key={colorClass}
-                                     onClick={() => updateItem(activeItem.id, 'color', colorClass)}
-                                     title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
-                                     className={`w-6 h-6 rounded-full ${colorClass} transition-all duration-200 ${
-                                       activeItem.color === colorClass 
-                                         ? 'ring-2 ring-white scale-110 shadow-lg' 
-                                         : 'opacity-40 hover:opacity-100 hover:scale-105'
-                                     }`}
-                                   />
-                                 ))}
-                               </div>
+                                  <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
+                                    <div className="grid grid-cols-7 gap-2">
+                                      {availableColors.map((colorClass) => (
+                                        <button
+                                          key={colorClass}
+                                          onClick={() => updateItem(activeItem.id, 'color', colorClass)}
+                                          title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
+                                          className={`h-6 rounded-md ${colorClass} transition-all duration-200 ${
+                                            activeItem.color === colorClass
+                                              ? 'ring-2 ring-white scale-105 shadow-lg'
+                                              : 'opacity-40 hover:opacity-100 hover:scale-105'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
                              </div>
                           </div>
                       </div>

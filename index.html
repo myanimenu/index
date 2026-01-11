@@ -13,6 +13,8 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
 
   <style>
     body {
@@ -95,6 +97,20 @@
       max-height: 200px;
       opacity: 1;
     }
+
+    /* Animação do Background Blob */
+    @keyframes blob {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    .animate-blob {
+      animation: blob 10s infinite;
+    }
+    .animation-delay-2000 {
+      animation-delay: 2s;
+    }
   </style>
 
   <script>
@@ -107,6 +123,10 @@
               text: '#ffffff',
               muted: '#9ca3af'
             }
+          },
+          fontFamily: {
+             mono: ['"JetBrains Mono"', 'monospace'],
+             digital: ['Orbitron', 'sans-serif'],
           }
         }
       }
@@ -132,9 +152,12 @@
     ];
 
     const availableColors = [
-      "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
-      "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
-      "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500", "bg-white"
+      "bg-indigo-500", "bg-blue-600", "bg-sky-500", "bg-cyan-500",
+      "bg-teal-500", "bg-emerald-500", "bg-green-600",
+      "bg-yellow-500", "bg-orange-500",
+      "bg-red-600", "bg-rose-500",
+      "bg-purple-600", "bg-fuchsia-600",
+      "bg-white"
     ];
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -203,6 +226,11 @@
       const [isUltraLight, setIsUltraLight] = useState(true);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
       
+      // Estado do Timer (Hover e Contagem)
+      const [isHoveringTime, setIsHoveringTime] = useState(false);
+      const [countdownString, setCountdownString] = useState("");
+      const [countdownLabel, setCountdownLabel] = useState("");
+      
       // Paginação
       const [currentPage, setCurrentPage] = useState(0);
       const [animDirection, setAnimDirection] = useState('slide-in-right');
@@ -224,16 +252,56 @@
         loadConfig();
       }, []);
 
-      // --- Lógica do Relógio ---
+      // --- Lógica do Relógio e Timer Cíclico ---
       useEffect(() => {
         const updateClock = () => {
           const now = new Date();
+          
+          // 1. Atualizar Relógio Normal
           setTime(now);
           const hour = now.getHours();
           if (hour >= 5 && hour < 12) setGreeting("BOM DIA");
           else if (hour >= 12 && hour < 18) setGreeting("BOA TARDE");
           else setGreeting("BOA NOITE");
+
+          // 2. Lógica do Timer Cíclico
+          // Começamos procurando o alvo no dia 01/04 (Abril = mês 3) do ano atual
+          let target = new Date(now.getFullYear(), 3, 1, 8, 0, 0); 
+          
+          // Uma hora em milissegundos
+          const oneHour = 60 * 60 * 1000;
+
+          // Enquanto o momento atual for MAIOR que o alvo + 1 hora,
+          // significa que esse evento já passou completamente (incluindo a pausa).
+          // Então avançamos 3 meses no alvo.
+          while (now.getTime() > target.getTime() + oneHour) {
+            // Adiciona 3 meses. setMonth lida automaticamente com virada de ano
+            target.setMonth(target.getMonth() + 3);
+          }
+
+          const diff = target.getTime() - now.getTime();
+
+          // Se diff for negativo, mas maior que -1 hora (-3600000), estamos na pausa
+          if (diff <= 0 && diff > -oneHour) {
+             setCountdownString("00:00:00");
+             setCountdownLabel("EM PAUSA");
+          } else {
+             
+             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+             // Formatação visual
+             const d = days > 0 ? `${days}D ` : '';
+             const h = hours.toString().padStart(2, '0');
+             const m = minutes.toString().padStart(2, '0');
+             const s = seconds.toString().padStart(2, '0');
+
+             setCountdownString(`${d}${h}:${m}:${s}`);
+          }
         };
+
         updateClock();
         const timer = setInterval(updateClock, 1000);
         return () => clearInterval(timer);
@@ -246,7 +314,6 @@
       }, [isUltraLight]);
 
       // --- BACK-END: Operações CRUD ---
-      
       const saveConfig = useCallback(() => {
         localStorage.setItem('site_config_v4', JSON.stringify(tempItems));
         setItems(tempItems);
@@ -282,7 +349,6 @@
         setTempItems(newItemsList);
         setActiveTabId(newItem.id);
         
-        // Pula para a última página onde o novo item está
         const newTotalPages = Math.ceil(newItemsList.filter(i => i.visible).length / ITEMS_PER_PAGE);
         setCurrentPage(newTotalPages - 1);
         
@@ -350,7 +416,6 @@
         });
       }, []);
 
-      // Ajustar página se items forem deletados
       useEffect(() => {
         if (currentPage >= totalPages && totalPages > 0) {
           setCurrentPage(totalPages - 1);
@@ -414,27 +479,46 @@
           </div>
 
           <main className="w-full max-w-4xl z-10 p-4 relative">
-<header className="relative flex flex-col items-center justify-center mb-16 select-none group">
-    {/* Efeito de Glow/Brilho de fundo decorativo */}
-    <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <header className="relative flex flex-col items-center justify-center mb-16 select-none group">
+                {/* Efeito de Glow/Brilho de fundo decorativo */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-    {/* Saudação (Gradient Text com Sombra) */}
-    <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl animate-float`}>
-        {greeting}
-    </h1>
-    
-    {/* Horário (Tipografia Monospace para evitar layout shift) */}
-    <div className="relative z-10 text-3xl md:text-5xl font-black text-white/90 tracking-widest mb-6 drop-shadow-lg font-mono variant-numeric-tabular">
-        {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-    </div>
-    
-    {/* Data (Pílula com efeito Glassmorphism aprimorado e hover) */}
-    <div className="relative z-10 px-6 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-lg transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 hover:shadow-purple-500/10 cursor-default">
-        <p className="text-[10px] md:text-xs text-gray-300 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
-            {formattedDate}
-        </p>
-    </div>
-</header>
+                {/* Saudação (Gradient Text com Sombra) */}
+                <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-1 -translate-y-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl animate-float`}>
+                    {greeting}
+                </h1>
+                
+                {/* Horário e Timer Container - MUDANÇA AQUI */}
+                <div 
+                   className="relative z-10 h-14 md:h-16 w-full flex justify-center items-center mb-3 cursor-default"
+                   onMouseEnter={() => setIsHoveringTime(true)}
+                   onMouseLeave={() => setIsHoveringTime(false)}
+                >
+                    {/* Relógio Padrão */}
+                    <div className={`absolute transition-all duration-500 ease-in-out transform ${isHoveringTime ? 'opacity-0 translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
+                      <span className="text-3xl md:text-5xl font-black text-white/90 tracking-widest drop-shadow-lg font-mono variant-numeric-tabular">
+                        {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+
+                    {/* Timer de Contagem Regressiva */}
+                    <div className={`absolute flex flex-col items-center transition-all duration-500 ease-in-out transform ${isHoveringTime ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90'}`}>
+                         <span className="text-[10px] uppercase tracking-[0.3em] text-purple-400 font-bold mb-1">
+                             {countdownLabel}
+                         </span>
+                            <span className="text-3xl md:text-5xl font-black text-white/90 tracking-wider drop-shadow-lg font-mono variant-numeric-tabular">
+                              {countdownString}
+                            </span>
+                    </div>
+                </div>
+                
+                {/* Data (Pílula com efeito Glassmorphism aprimorado e hover) */}
+                <div className="relative z-10 px-6 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-lg transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 hover:shadow-purple-500/10 cursor-default">
+                    <p className="text-[10px] md:text-xs text-gray-300 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                        {formattedDate}
+                    </p>
+                </div>
+            </header>
 
             {/* Container Relativo para as Setas */}
             <div className="relative">
@@ -669,5 +753,4 @@
     root.render(<App />);
   </script>
 </body>
-
 </html>

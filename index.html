@@ -1,20 +1,26 @@
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>myanimenu</title>
+  <!-- Placeholder para favicon -->
   <link rel="shortcut icon" href="myanimenu_pfp.png" type="image/x-icon">
 
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
 
   <style>
     body {
@@ -23,6 +29,7 @@
       color: #f8fafc;
       margin: 0;
       overflow-x: hidden;
+      overflow: hidden;
     }
 
     /* --- UI --- */
@@ -30,6 +37,15 @@
       background: linear-gradient(135deg, #121212 0%, #0d0d0d 100%);
       border: 1px solid #2a2a2a;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+      /* Animação simples de entrada */
+      animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transform-origin: center center;
+      position: relative; /* Importante para o overlay de delete */
+    }
+
+    @keyframes modalEnter {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     /* --- Links (Novo Visual) --- */
@@ -40,12 +56,52 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
+    .card-hover:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    }
+
     .slide-in-right {
       animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     }
     
     .slide-in-left {
       animation: slideInLeft 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes blob {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+
+    .animate-blob {
+      animation: blob 7s infinite;
+    }
+
+    .animation-delay-2000 {
+      animation-delay: 2s;
     }
 
     /* Scrollbar */
@@ -63,6 +119,7 @@
       border-radius: 3px;
     }
 
+    /* Adicionado do Site 1 para o botão da seta funcionar igual */
     .fab-active-press:active {
       transform: scale(0.9) !important;
     }
@@ -94,22 +151,8 @@
     }
 
     .advanced-settings-enter.show {
-      max-height: 200px;
+      max-height: 400px;
       opacity: 1;
-    }
-
-    /* Animação do Background Blob */
-    @keyframes blob {
-      0% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(30px, -50px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
-      100% { transform: translate(0px, 0px) scale(1); }
-    }
-    .animate-blob {
-      animation: blob 10s infinite;
-    }
-    .animation-delay-2000 {
-      animation-delay: 2s;
     }
   </style>
 
@@ -123,10 +166,6 @@
               text: '#ffffff',
               muted: '#9ca3af'
             }
-          },
-          fontFamily: {
-             mono: ['"JetBrains Mono"', 'monospace'],
-             digital: ['Orbitron', 'sans-serif'],
           }
         }
       }
@@ -152,12 +191,9 @@
     ];
 
     const availableColors = [
-      "bg-indigo-500", "bg-blue-600", "bg-sky-500", "bg-cyan-500",
-      "bg-teal-500", "bg-emerald-500", "bg-green-600",
-      "bg-yellow-500", "bg-orange-500",
-      "bg-red-600", "bg-rose-500",
-      "bg-purple-600", "bg-fuchsia-600",
-      "bg-white"
+      "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
+      "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
+      "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500", "bg-white"
     ];
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -170,7 +206,7 @@
       return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
     });
 
-    const LinkCardSite2 = memo(({ data, isPreview = false }) => {
+    const LinkCardSite2 = memo(({ data, isPreview = false, openNewTab = true }) => {
       const textColorClass = data.color 
         ? data.color.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
         : 'text-gray-400';
@@ -183,8 +219,8 @@
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between border border-[#222] bg-[#0c0c0c] opacity-50 cursor-not-allowed`,
       } : {
         href: data.url,
-        target: "_blank",
-        rel: "noopener noreferrer",
+        target: openNewTab ? "_blank" : "_self",
+        rel: openNewTab ? "noopener noreferrer" : undefined,
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between card-hover cursor-pointer`,
       };
 
@@ -212,24 +248,33 @@
       );
     });
 
+    const ToggleSwitch = ({ checked, onChange }) => (
+      <div 
+        onClick={() => onChange(!checked)}
+        className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors duration-300 ease-in-out border border-white/5 ${checked ? 'bg-indigo-600' : 'bg-zinc-700'}`}
+      >
+        <div className={`absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${checked ? 'left-[18px]' : 'left-[3px]'}`}></div>
+      </div>
+    );
+
     const App = () => {
       // Estado para Dados do Site (Configuração)
       const [items, setItems] = useState(defaultData);
+      const [openInNewTab, setOpenInNewTab] = useState(true);
       
       // Estados de UI
       const [time, setTime] = useState(new Date());
       const [greeting, setGreeting] = useState("");
       const [isConfigOpen, setIsConfigOpen] = useState(false);
-      const [activeTabId, setActiveTabId] = useState(null);
       const [isFabOpen, setIsFabOpen] = useState(false);
+      const [activeTabId, setActiveTabId] = useState(null);
       const [tempItems, setTempItems] = useState(defaultData);
+      const [tempOpenInNewTab, setTempOpenInNewTab] = useState(true);
       const [isUltraLight, setIsUltraLight] = useState(true);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
       
-      // Estado do Timer (Hover e Contagem)
-      const [isHoveringTime, setIsHoveringTime] = useState(false);
-      const [countdownString, setCountdownString] = useState("");
-      const [countdownLabel, setCountdownLabel] = useState("");
+      // Novo estado para confirmação de exclusão
+      const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       
       // Paginação
       const [currentPage, setCurrentPage] = useState(0);
@@ -245,83 +290,58 @@
               const loaded = JSON.parse(savedConfigV4);
               setItems(loaded);
               setTempItems(loaded);
-              return;
             } catch (e) { console.error("Erro ao carregar v4", e); }
+          }
+          
+          const savedSettings = localStorage.getItem('site_settings_global');
+          if (savedSettings) {
+            try {
+              const settings = JSON.parse(savedSettings);
+              if (settings.openInNewTab !== undefined) {
+                setOpenInNewTab(settings.openInNewTab);
+              }
+            } catch (e) { console.error("Erro settings", e); }
           }
         };
         loadConfig();
       }, []);
 
-      // --- Lógica do Relógio e Timer Cíclico ---
+      // Resetar confirmação ao trocar de aba
+      useEffect(() => {
+        setShowDeleteConfirm(false);
+      }, [activeTabId]);
+
+      // --- Lógica do Relógio ---
       useEffect(() => {
         const updateClock = () => {
           const now = new Date();
-          
-          // 1. Atualizar Relógio Normal
           setTime(now);
           const hour = now.getHours();
           if (hour >= 5 && hour < 12) setGreeting("BOM DIA");
           else if (hour >= 12 && hour < 18) setGreeting("BOA TARDE");
           else setGreeting("BOA NOITE");
-
-          // 2. Lógica do Timer Cíclico
-          // Começamos procurando o alvo no dia 01/04 (Abril = mês 3) do ano atual
-          let target = new Date(now.getFullYear(), 3, 1, 8, 0, 0); 
-          
-          // Uma hora em milissegundos
-          const oneHour = 60 * 60 * 1000;
-
-          // Enquanto o momento atual for MAIOR que o alvo + 1 hora,
-          // significa que esse evento já passou completamente (incluindo a pausa).
-          // Então avançamos 3 meses no alvo.
-          while (now.getTime() > target.getTime() + oneHour) {
-            // Adiciona 3 meses. setMonth lida automaticamente com virada de ano
-            target.setMonth(target.getMonth() + 3);
-          }
-
-          const diff = target.getTime() - now.getTime();
-
-          // Se diff for negativo, mas maior que -1 hora (-3600000), estamos na pausa
-          if (diff <= 0 && diff > -oneHour) {
-             setCountdownString("00:00:00");
-             setCountdownLabel("EM PAUSA");
-          } else {
-             
-             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-             // Formatação visual
-             const d = days > 0 ? `${days}D ` : '';
-             const h = hours.toString().padStart(2, '0');
-             const m = minutes.toString().padStart(2, '0');
-             const s = seconds.toString().padStart(2, '0');
-
-             setCountdownString(`${d}${h}:${m}:${s}`);
-          }
         };
-
         updateClock();
         const timer = setInterval(updateClock, 1000);
         return () => clearInterval(timer);
       }, []);
 
-      // --- Lógica Visual Global ---
       useEffect(() => {
         if (isUltraLight) document.body.classList.add('ultra-light');
         else document.body.classList.remove('ultra-light');
       }, [isUltraLight]);
 
-      // --- BACK-END: Operações CRUD ---
       const saveConfig = useCallback(() => {
         localStorage.setItem('site_config_v4', JSON.stringify(tempItems));
         setItems(tempItems);
+        localStorage.setItem('site_settings_global', JSON.stringify({ openInNewTab: tempOpenInNewTab }));
+        setOpenInNewTab(tempOpenInNewTab);
         setIsConfigOpen(false);
-      }, [tempItems]);
+      }, [tempItems, tempOpenInNewTab]);
 
       const openConfig = () => {
         setTempItems(JSON.parse(JSON.stringify(items)));
+        setTempOpenInNewTab(openInNewTab);
         if (items.length > 0 && !activeTabId) {
           setActiveTabId(items[0].id);
         } else if (items.length > 0 && !items.find(i => i.id === activeTabId)) {
@@ -329,6 +349,7 @@
         }
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
+        setShowDeleteConfirm(false);
       };
 
       const addNewLink = () => {
@@ -348,22 +369,18 @@
         setItems(newItemsList);
         setTempItems(newItemsList);
         setActiveTabId(newItem.id);
-        
         const newTotalPages = Math.ceil(newItemsList.filter(i => i.visible).length / ITEMS_PER_PAGE);
         setCurrentPage(newTotalPages - 1);
-        
         localStorage.setItem('site_config_v4', JSON.stringify(newItemsList));
-        
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
-        setIsFabOpen(false);
+        setIsFabOpen(false); // Fecha o menu ao adicionar
       };
 
       const deleteItem = useCallback((idToDelete) => {
         if (tempItems.length <= 1) return;
         const newTemp = tempItems.filter(item => item.id !== idToDelete);
         setTempItems(newTemp);
-        
         if (activeTabId === idToDelete) {
           setActiveTabId(newTemp[0]?.id || null);
         }
@@ -381,7 +398,6 @@
         ));
       }, []);
 
-      // --- Paginação Logic ---
       const visibleItems = items.filter(item => item.visible);
       const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
       
@@ -401,17 +417,13 @@
             
       const moveItem = useCallback((fromId, toId) => {
         if (fromId === toId) return;
-
         setTempItems(prev => {
           const items = [...prev];
           const fromIndex = items.findIndex(i => i.id === fromId);
           const toIndex = items.findIndex(i => i.id === toId);
-
           if (fromIndex === -1 || toIndex === -1) return prev;
-
           const [moved] = items.splice(fromIndex, 1);
           items.splice(toIndex, 0, moved);
-
           return items;
         });
       }, []);
@@ -427,7 +439,6 @@
         (currentPage + 1) * ITEMS_PER_PAGE
       );
 
-      // Helpers de Renderização
       const formattedDate = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase());
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
@@ -437,7 +448,7 @@
       const activeItem = tempItems.find(i => i.id === activeTabId) || tempItems[0];
 
       return (
-        <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-10">
+        <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-28">
           <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full filter blur-[100px] animate-blob"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
@@ -480,39 +491,16 @@
 
           <main className="w-full max-w-4xl z-10 p-4 relative">
             <header className="relative flex flex-col items-center justify-center mb-16 select-none group">
-                {/* Efeito de Glow/Brilho de fundo decorativo */}
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-                {/* Saudação (Gradient Text com Sombra) */}
-                <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-1 -translate-y-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl animate-float`}>
+                <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl animate-float`}>
                     {greeting}
                 </h1>
                 
-                {/* Horário e Timer Container - MUDANÇA AQUI */}
-                <div 
-                   className="relative z-10 h-14 md:h-16 w-full flex justify-center items-center mb-3 cursor-default"
-                   onMouseEnter={() => setIsHoveringTime(true)}
-                   onMouseLeave={() => setIsHoveringTime(false)}
-                >
-                    {/* Relógio Padrão */}
-                    <div className={`absolute transition-all duration-500 ease-in-out transform ${isHoveringTime ? 'opacity-0 translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
-                      <span className="text-3xl md:text-5xl font-black text-white/90 tracking-widest drop-shadow-lg font-mono variant-numeric-tabular">
-                        {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-
-                    {/* Timer de Contagem Regressiva */}
-                    <div className={`absolute flex flex-col items-center transition-all duration-500 ease-in-out transform ${isHoveringTime ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90'}`}>
-                         <span className="text-[10px] uppercase tracking-[0.3em] text-purple-400 font-bold mb-1">
-                             {countdownLabel}
-                         </span>
-                            <span className="text-3xl md:text-5xl font-black text-white/90 tracking-wider drop-shadow-lg font-mono variant-numeric-tabular">
-                              {countdownString}
-                            </span>
-                    </div>
+                <div className="relative z-10 text-3xl md:text-5xl font-black text-white/90 tracking-widest mb-6 drop-shadow-lg font-mono variant-numeric-tabular">
+                    {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
                 
-                {/* Data (Pílula com efeito Glassmorphism aprimorado e hover) */}
                 <div className="relative z-10 px-6 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-lg transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 hover:shadow-purple-500/10 cursor-default">
                     <p className="text-[10px] md:text-xs text-gray-300 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
                         {formattedDate}
@@ -520,58 +508,52 @@
                 </div>
             </header>
 
-            {/* Container Relativo para as Setas */}
             <div className="relative">
-              {/* Seta Esquerda (Anterior) */}
               {currentPage > 0 && (
                 <button 
                   onClick={prevPage}
-                  className="absolute left-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
+                  className="absolute left-[-60px] md:left-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
                   title="Anterior"
                 >
                   <i className="ph-bold ph-caret-left text-3xl"></i>
                 </button>
               )}
 
-              {/* Grid de Links com Animação */}
               <div key={currentPage} className={`grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 ${animDirection}`}>
                 {currentDisplayItems.map((item) => (
-                  <LinkCardSite2 key={item.id} data={item} />
+                  <LinkCardSite2 key={item.id} data={item} openNewTab={openInNewTab} />
                 ))}
               </div>
 
-              {/* Seta Direita (Próximo) */}
               {currentPage < totalPages - 1 && (
                 <button 
                   onClick={nextPage}
-                  className="absolute right-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
+                  className="absolute right-[-60px] md:right-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
                   title="Próximo"
                 >
                   <i className="ph-bold ph-caret-right text-3xl"></i>
                 </button>
               )}
               
-              {/* Paginação Mobile (Pontos) */}
               {totalPages > 1 && (
                 <div className="flex justify-center gap-2 mt-6 md:hidden">
                    {Array.from({ length: totalPages }).map((_, idx) => (
                      <div 
-                        key={idx}
-                        onClick={() => setCurrentPage(idx)}
-                        className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? 'w-6 bg-white' : 'w-2 bg-white/20'}`}
+                       key={idx}
+                       onClick={() => setCurrentPage(idx)}
+                       className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? 'w-6 bg-white' : 'w-2 bg-white/20'}`}
                      />
                    ))}
                 </div>
               )}
             </div>
             
-            {/* Indicador de Página Desktop */}
             {totalPages > 1 && (
                 <div className="hidden md:flex justify-center mt-8 gap-1">
                    {Array.from({ length: totalPages }).map((_, idx) => (
                      <div 
-                        key={idx}
-                        className={`h-1 rounded-full transition-all duration-500 ${currentPage === idx ? 'w-12 bg-white/40' : 'w-2 bg-white/10'}`}
+                       key={idx}
+                       className={`h-1 rounded-full transition-all duration-500 ${currentPage === idx ? 'w-12 bg-white/40' : 'w-2 bg-white/10'}`}
                      />
                    ))}
                 </div>
@@ -580,8 +562,38 @@
 
           {isConfigOpen && activeItem && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-2">
-              <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl w-full max-w-2xl flex flex-col max-h-[85vh] h-auto shadow-2xl overflow-hidden">
+              <div className="config-modal rounded-xl w-full max-w-2xl flex flex-col max-h-[85vh] h-auto shadow-2xl overflow-hidden relative">
                 
+                {/* --- POP-UP DE CONFIRMAÇÃO --- */}
+                {showDeleteConfirm && (
+                    <div className="absolute inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-sm">
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 animate-bounce">
+                            <i className="ph-bold ph-trash text-3xl text-red-500"></i>
+                        </div>
+                        <h3 className="text-white font-black text-xl uppercase tracking-wider mb-2">Excluir Link</h3>
+                        <p className="text-gray-400 text-sm max-w-xs mb-6 font-medium">
+                            Você está prestes a remover <span className="text-white">"{activeItem.title}"</span><br/>Essa ação não pode ser desfeita
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="px-5 py-2.5 rounded-lg bg-[#222] border border-[#333] text-gray-300 text-xs font-bold uppercase tracking-widest hover:bg-[#333] hover:text-white transition-all duration-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    deleteItem(activeItem.id);
+                                    setShowDeleteConfirm(false);
+                                }}
+                                className="px-5 py-2.5 rounded-lg bg-red-600 border border-red-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 hover:shadow-lg hover:shadow-red-900/30 transition-all duration-200"
+                            >
+                              Excluir
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex-none flex items-center bg-[#050505] border-b border-[#1a1a1a] h-12 pr-2">
                   <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-scrollbar horizontal-scrollbar h-full px-2">
                     {tempItems.map((item) => (
@@ -632,21 +644,13 @@
                       </div>
 
                       <div className="flex items-center gap-2">
-
                         <button 
-                          onClick={() => deleteItem(activeItem.id)} 
+                          onClick={() => setShowDeleteConfirm(true)} 
                           className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group"
                           title="Excluir"
                         >
                           <i className="ph-bold ph-trash text-lg group-hover:scale-110"></i>
                         </button>
-                        
-                        <div
-                          className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors duration-500 ease-in-out border border-white/5 ${activeItem.enabled ? 'bg-green-600' : 'bg-red-600'}`}
-                          onClick={() => toggleEnabled(activeItem.id)}
-                        >
-                          <div className={`absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${activeItem.enabled ? 'left-[18px]' : 'left-[3px]'}`}></div>
-                        </div>
                       </div>
                     </div>
 
@@ -702,7 +706,8 @@
                       </div>
 
                       <div className={`advanced-settings-enter ${showAdvancedSettings ? 'show' : ''}`}>
-                          <div className="space-y-2 pt-1">
+                          <div className="space-y-4 pt-2">
+                             
                              <div className="space-y-1">
                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
                                   <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
@@ -722,25 +727,47 @@
                                     </div>
                                   </div>
                              </div>
+
+                             <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Status do Link</label>
+                                    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
+                                        <span className={`text-[10px] font-600 ${activeItem.enabled ? 'text-green-500' : 'text-red-500'}`}>
+                                            {activeItem.enabled ? 'ATIVO' : 'INATIVO'}
+                                        </span>
+                                        <ToggleSwitch checked={activeItem.enabled} onChange={() => toggleEnabled(activeItem.id)} />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Modo de Abertura</label>
+                                    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
+                                        <span className="text-[10px] font-500 text-gray-300">
+                                            {tempOpenInNewTab ? 'BLANK ON' : 'BLANK OFF'}
+                                        </span>
+                                        <ToggleSwitch checked={tempOpenInNewTab} onChange={setTempOpenInNewTab} />
+                                    </div>
+                                </div>
+                             </div>
+
                           </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center gap-3">
-                  <button 
-                    onClick={() => setIsConfigOpen(false)} 
-                    className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-4 py-2 transition-all duration-300 rounded hover:bg-white/5"
-                  >
-                    Descartar
-                  </button>
-                  <button
-                    onClick={saveConfig}
-                    className="bg-white/5 text-gray-500 border border-white/5 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all duration-300 hover:bg-white/10 hover:text-white hover:shadow-lg"
-                  >
-                    SALVAR
-                  </button>
+                <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-end items-center gap-3">
+                    <button 
+                      onClick={() => setIsConfigOpen(false)} 
+                      className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-4 py-2 transition-all duration-300 rounded hover:bg-white/5"
+                    >
+                      Descartar
+                    </button>
+                    <button
+                      onClick={saveConfig}
+                      className="bg-white/5 text-gray-500 border border-white/5 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all duration-300 hover:bg-white/10 hover:text-white hover:shadow-lg"
+                    >
+                      SALVAR
+                    </button>
                 </div>
               </div>
             </div>

@@ -732,7 +732,7 @@
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Status do Link</label>
                                     <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
-                                        <span className={`text-[10px] font-600 ${activeItem.enabled ? 'text-green-500' : 'text-red-500'}`}>
+                                        <span className={`text-[10px] font-bold ${activeItem.enabled ? 'text-green-500' : 'text-red-500'}`}>
                                             {activeItem.enabled ? 'ATIVO' : 'INATIVO'}
                                         </span>
                                         <ToggleSwitch checked={activeItem.enabled} onChange={() => toggleEnabled(activeItem.id)} />
@@ -741,7 +741,7 @@
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Modo de Abertura</label>
                                     <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
-                                        <span className="text-[10px] font-500 text-gray-300">
+                                        <span className="text-[10px] font-bold text-gray-300">
                                             {tempOpenInNewTab ? 'BLANK ON' : 'BLANK OFF'}
                                         </span>
                                         <ToggleSwitch checked={tempOpenInNewTab} onChange={setTempOpenInNewTab} />
@@ -781,3 +781,4 @@
   </script>
 </body>
 </html>
+

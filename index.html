@@ -178,26 +178,115 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useCallback, memo } = React;
+    const { useState, useEffect, useCallback, memo, useMemo } = React;
 
-    // --- CONFIGURAÇÃO PADRÃO (BACK-END LOGIC) ---
-    const defaultData = [
-      { id: '1', title: "watched-animes", subtitle: "version-x", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true },
-      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true },
-      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "myhtmlist.html", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true },
-      { id: '4', title: "sequelist", subtitle: "version-i", url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true },
-      { id: '5', title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "bg-indigo-500", visible: true, enabled: true },
-      { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true },
+    // --- UTILS & HELPERS ---
+    
+    // Gerador de ID seguro
+    const generateSafeId = () => {
+      if (window.crypto && window.crypto.randomUUID) {
+        return window.crypto.randomUUID();
+      }
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    };
+
+    // --- CONFIGURAÇÃO PADRÃO ---
+    const DEFAULT_CONFIG = [
+      { id: '1', title: "watched-animes", subtitle: "version-x", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true, openNewTab: true },
+      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true },
+      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "myhtmlist.html", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true },
+      { id: '4', title: "sequelist", subtitle: "version-i", url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true, openNewTab: true },
+      { id: '5', title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "bg-indigo-500", visible: true, enabled: true, openNewTab: true },
+      { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true, openNewTab: true },
     ];
 
-    const availableColors = [
+    const AVAILABLE_COLORS = [
       "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
       "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
       "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500", "bg-white"
     ];
 
-    const generateId = () => Math.random().toString(36).substr(2, 9);
     const ITEMS_PER_PAGE = 6;
+
+    // --- HOOKS PERSONALIZADOS ---
+
+    // Hook para relógio e saudação
+    const useClock = () => {
+      const [time, setTime] = useState(new Date());
+      const [greeting, setGreeting] = useState("");
+      const [formattedDate, setFormattedDate] = useState("");
+
+      useEffect(() => {
+        const update = () => {
+          const now = new Date();
+          setTime(now);
+          
+          const hour = now.getHours();
+          if (hour >= 5 && hour < 12) setGreeting("BOM DIA");
+          else if (hour >= 12 && hour < 18) setGreeting("BOA TARDE");
+          else setGreeting("BOA NOITE");
+
+          setFormattedDate(now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase()));
+        };
+        
+        update();
+        const timer = setInterval(update, 1000);
+        return () => clearInterval(timer);
+      }, []);
+
+      return { time, greeting, formattedDate };
+    };
+
+    // Hook para Gerenciamento de Dados Persistentes
+    const usePersistentData = (key, initialValue) => {
+      const [data, setData] = useState(initialValue);
+      const [isLoaded, setIsLoaded] = useState(false);
+
+      // Função de migração de schema
+      const migrateData = useCallback((rawData) => {
+        if (!Array.isArray(rawData)) return initialValue;
+        
+        return rawData.map(item => ({
+          ...item,
+          // Garante que campos novos existam com valor padrão se estiverem faltando
+          openNewTab: item.openNewTab !== undefined ? item.openNewTab : true,
+          enabled: item.enabled !== undefined ? item.enabled : true,
+          visible: item.visible !== undefined ? item.visible : true,
+          id: item.id || generateSafeId()
+        }));
+      }, [initialValue]);
+
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setData(migrateData(parsed));
+          } else {
+            setData(initialValue);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar dados:", error);
+          setData(initialValue);
+        } finally {
+          setIsLoaded(true);
+        }
+      }, [key, migrateData]);
+
+      const saveData = useCallback((newData) => {
+        try {
+          setData(newData);
+          localStorage.setItem(key, JSON.stringify(newData));
+        } catch (error) {
+          console.error("Erro ao salvar dados:", error);
+          alert("Erro ao salvar configurações. Verifique se o armazenamento local está cheio.");
+        }
+      }, [key]);
+
+      return [data, saveData, isLoaded];
+    };
+
+    // --- COMPONENTES ---
 
     const LucideIcon = memo(({ name, size = 24, className = "" }) => {
       useEffect(() => {
@@ -206,21 +295,24 @@
       return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
     });
 
-    const LinkCardSite2 = memo(({ data, isPreview = false, openNewTab = true }) => {
-      const textColorClass = data.color 
-        ? data.color.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
-        : 'text-gray-400';
+    const LinkCardSite2 = memo(({ data, isPreview = false }) => {
+      const textColorClass = useMemo(() => 
+        data.color 
+          ? data.color.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
+          : 'text-gray-400',
+      [data.color]);
         
       const isDisabled = !data.enabled && !isPreview;
       const WrapperTag = isDisabled ? 'div' : 'a';
-      
+      const shouldOpenNewTab = data.openNewTab !== false;
+
       const WrapperProps = isDisabled ? {
         title: "Indisponível no momento",
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between border border-[#222] bg-[#0c0c0c] opacity-50 cursor-not-allowed`,
       } : {
         href: data.url,
-        target: openNewTab ? "_blank" : "_self",
-        rel: openNewTab ? "noopener noreferrer" : undefined,
+        target: shouldOpenNewTab ? "_blank" : "_self",
+        rel: shouldOpenNewTab ? "noopener noreferrer" : undefined,
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between card-hover cursor-pointer`,
       };
 
@@ -248,144 +340,106 @@
       );
     });
 
-    const ToggleSwitch = ({ checked, onChange }) => (
+    const ToggleSwitch = memo(({ checked, onChange }) => (
       <div 
         onClick={() => onChange(!checked)}
         className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors duration-300 ease-in-out border border-white/5 ${checked ? 'bg-indigo-600' : 'bg-zinc-700'}`}
       >
         <div className={`absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-md transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${checked ? 'left-[18px]' : 'left-[3px]'}`}></div>
       </div>
-    );
+    ));
 
+    // --- APP PRINCIPAL ---
     const App = () => {
-      // Estado para Dados do Site (Configuração)
-      const [items, setItems] = useState(defaultData);
-      const [openInNewTab, setOpenInNewTab] = useState(true);
+      // Data Management
+      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v4', DEFAULT_CONFIG);
       
-      // Estados de UI
-      const [time, setTime] = useState(new Date());
-      const [greeting, setGreeting] = useState("");
+      // UI Logic Hooks
+      const { time, greeting, formattedDate } = useClock();
+
+      // Local UI State
       const [isConfigOpen, setIsConfigOpen] = useState(false);
       const [isFabOpen, setIsFabOpen] = useState(false);
-      const [activeTabId, setActiveTabId] = useState(null);
-      const [tempItems, setTempItems] = useState(defaultData);
-      const [tempOpenInNewTab, setTempOpenInNewTab] = useState(true);
       const [isUltraLight, setIsUltraLight] = useState(true);
+      
+      // Configuration UI State (Draft Mode)
+      const [activeTabId, setActiveTabId] = useState(null);
+      const [tempItems, setTempItems] = useState([]);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-      
-      // Novo estado para confirmação de exclusão
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-      
-      // Paginação
-      const [currentPage, setCurrentPage] = useState(0);
-      const [animDirection, setAnimDirection] = useState('slide-in-right');
       const [draggedId, setDraggedId] = useState(null);
 
-      // --- BACK-END: Lógica de Carregamento e Migração ---
-      useEffect(() => {
-        const loadConfig = () => {
-          const savedConfigV4 = localStorage.getItem('site_config_v4');
-          if (savedConfigV4) {
-            try {
-              const loaded = JSON.parse(savedConfigV4);
-              setItems(loaded);
-              setTempItems(loaded);
-            } catch (e) { console.error("Erro ao carregar v4", e); }
-          }
-          
-          const savedSettings = localStorage.getItem('site_settings_global');
-          if (savedSettings) {
-            try {
-              const settings = JSON.parse(savedSettings);
-              if (settings.openInNewTab !== undefined) {
-                setOpenInNewTab(settings.openInNewTab);
-              }
-            } catch (e) { console.error("Erro settings", e); }
-          }
-        };
-        loadConfig();
-      }, []);
+      // Pagination State
+      const [currentPage, setCurrentPage] = useState(0);
+      const [animDirection, setAnimDirection] = useState('slide-in-right');
 
-      // Resetar confirmação ao trocar de aba
-      useEffect(() => {
-        setShowDeleteConfirm(false);
-      }, [activeTabId]);
-
-      // --- Lógica do Relógio ---
-      useEffect(() => {
-        const updateClock = () => {
-          const now = new Date();
-          setTime(now);
-          const hour = now.getHours();
-          if (hour >= 5 && hour < 12) setGreeting("BOM DIA");
-          else if (hour >= 12 && hour < 18) setGreeting("BOA TARDE");
-          else setGreeting("BOA NOITE");
-        };
-        updateClock();
-        const timer = setInterval(updateClock, 1000);
-        return () => clearInterval(timer);
-      }, []);
-
+      // Efeito para tema leve/ultra-light
       useEffect(() => {
         if (isUltraLight) document.body.classList.add('ultra-light');
         else document.body.classList.remove('ultra-light');
       }, [isUltraLight]);
 
-      const saveConfig = useCallback(() => {
-        localStorage.setItem('site_config_v4', JSON.stringify(tempItems));
-        setItems(tempItems);
-        localStorage.setItem('site_settings_global', JSON.stringify({ openInNewTab: tempOpenInNewTab }));
-        setOpenInNewTab(tempOpenInNewTab);
-        setIsConfigOpen(false);
-      }, [tempItems, tempOpenInNewTab]);
+      // --- HANDLERS DA CONFIGURAÇÃO ---
 
-      const openConfig = () => {
+      const openConfig = useCallback(() => {
+        // Clona profundamente os itens para edição segura (Draft Mode)
         setTempItems(JSON.parse(JSON.stringify(items)));
-        setTempOpenInNewTab(openInNewTab);
-        if (items.length > 0 && !activeTabId) {
-          setActiveTabId(items[0].id);
-        } else if (items.length > 0 && !items.find(i => i.id === activeTabId)) {
-          setActiveTabId(items[0].id);
+        
+        // Define aba ativa
+        if (items.length > 0) {
+            // Se já tem uma aba ativa e ela ainda existe, mantém. Se não, pega a primeira.
+            const exists = activeTabId && items.find(i => i.id === activeTabId);
+            if (!exists) setActiveTabId(items[0].id);
         }
+        
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
         setShowDeleteConfirm(false);
-      };
+      }, [items, activeTabId]);
 
-      const addNewLink = () => {
+      const saveConfig = useCallback(() => {
+        setItems(tempItems);
+        setIsConfigOpen(false);
+        
+        // Ajusta paginação se necessário após salvar
+        const visibleCount = tempItems.filter(i => i.visible).length;
+        const maxPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
+        if (currentPage >= maxPages && maxPages > 0) {
+            setCurrentPage(maxPages - 1);
+        }
+      }, [tempItems, setItems, currentPage]);
+
+      const addNewLink = useCallback(() => {
         const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-indigo-600", "bg-pink-600"];
         const newItem = {
-          id: generateId(),
+          id: generateSafeId(),
           title: "Novo Link", 
-          subtitle: "Clique para editar", 
+          subtitle: "Descrição", 
           url: "https://google.com",
           icon: "ph-link", 
           color: colorPool[Math.floor(Math.random() * colorPool.length)], 
           visible: true, 
-          enabled: true
+          enabled: true,
+          openNewTab: true
         };
         
+        // Adiciona direto ao estado oficial e abre modal em modo de rascunho
         const newItemsList = [...items, newItem];
         setItems(newItemsList);
-        setTempItems(newItemsList);
+        setTempItems(newItemsList); // Atualiza também o temporário
         setActiveTabId(newItem.id);
+        
+        // Vai para a última página
         const newTotalPages = Math.ceil(newItemsList.filter(i => i.visible).length / ITEMS_PER_PAGE);
-        setCurrentPage(newTotalPages - 1);
-        localStorage.setItem('site_config_v4', JSON.stringify(newItemsList));
+        setCurrentPage(Math.max(0, newTotalPages - 1));
+        
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
-        setIsFabOpen(false); // Fecha o menu ao adicionar
-      };
+        setIsFabOpen(false);
+      }, [items, setItems]);
 
-      const deleteItem = useCallback((idToDelete) => {
-        if (tempItems.length <= 1) return;
-        const newTemp = tempItems.filter(item => item.id !== idToDelete);
-        setTempItems(newTemp);
-        if (activeTabId === idToDelete) {
-          setActiveTabId(newTemp[0]?.id || null);
-        }
-      }, [tempItems, activeTabId]);
-
+      // CRUD de Itens (Modo Rascunho/Draft)
+      
       const updateItem = useCallback((id, field, value) => {
         setTempItems(prev => prev.map(item => 
           item.id === id ? { ...item, [field]: value } : item
@@ -398,54 +452,80 @@
         ));
       }, []);
 
-      const visibleItems = items.filter(item => item.visible);
-      const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
-      
-      const nextPage = () => {
-        if (currentPage < totalPages - 1) {
-          setAnimDirection('slide-in-right');
-          setCurrentPage(prev => prev + 1);
+      const deleteItem = useCallback((idToDelete) => {
+        if (tempItems.length <= 1) {
+            alert("Você precisa ter pelo menos um link.");
+            return;
         }
-      };
+        
+        const newTemp = tempItems.filter(item => item.id !== idToDelete);
+        setTempItems(newTemp);
+        
+        // Se deletou o item ativo, muda o foco
+        if (activeTabId === idToDelete) {
+          setActiveTabId(newTemp[0]?.id || null);
+        }
+      }, [tempItems, activeTabId]);
 
-      const prevPage = () => {
-        if (currentPage > 0) {
-          setAnimDirection('slide-in-left');
-          setCurrentPage(prev => prev - 1);
-        }
-      };
-            
       const moveItem = useCallback((fromId, toId) => {
         if (fromId === toId) return;
         setTempItems(prev => {
-          const items = [...prev];
-          const fromIndex = items.findIndex(i => i.id === fromId);
-          const toIndex = items.findIndex(i => i.id === toId);
+          const newArr = [...prev];
+          const fromIndex = newArr.findIndex(i => i.id === fromId);
+          const toIndex = newArr.findIndex(i => i.id === toId);
+          
           if (fromIndex === -1 || toIndex === -1) return prev;
-          const [moved] = items.splice(fromIndex, 1);
-          items.splice(toIndex, 0, moved);
-          return items;
+          
+          const [moved] = newArr.splice(fromIndex, 1);
+          newArr.splice(toIndex, 0, moved);
+          return newArr;
         });
       }, []);
 
+      // --- LÓGICA DE PAGINAÇÃO ---
+      
+      const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
+      const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
+      
+      // Corrige página se itens forem deletados e a página atual ficar vazia
       useEffect(() => {
-        if (currentPage >= totalPages && totalPages > 0) {
-          setCurrentPage(totalPages - 1);
-        }
-      }, [items, totalPages, currentPage]);
+         if (currentPage >= totalPages && totalPages > 0) {
+            setCurrentPage(totalPages - 1);
+         }
+      }, [totalPages, currentPage]);
 
-      const currentDisplayItems = visibleItems.slice(
+      const nextPage = useCallback(() => {
+        if (currentPage < totalPages - 1) {
+          setAnimDirection('slide-in-right');
+          setCurrentPage(p => p + 1);
+        }
+      }, [currentPage, totalPages]);
+
+      const prevPage = useCallback(() => {
+        if (currentPage > 0) {
+          setAnimDirection('slide-in-left');
+          setCurrentPage(p => p - 1);
+        }
+      }, [currentPage]);
+
+      const currentDisplayItems = useMemo(() => visibleItems.slice(
         currentPage * ITEMS_PER_PAGE, 
         (currentPage + 1) * ITEMS_PER_PAGE
-      );
+      ), [visibleItems, currentPage]);
 
-      const formattedDate = time.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, (c) => c.toUpperCase());
+      // Gradiente baseado na hora
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
           : "from-yellow-200 via-orange-200 to-yellow-200";
 
-      const activeItem = tempItems.find(i => i.id === activeTabId) || tempItems[0];
+      // Item ativo no modal
+      const activeItem = useMemo(() => 
+         tempItems.find(i => i.id === activeTabId) || tempItems[0], 
+      [tempItems, activeTabId]);
+
+      // Evita piscar enquanto carrega do localStorage
+      if (!isDataLoaded) return null; 
 
       return (
         <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-28">
@@ -521,7 +601,7 @@
 
               <div key={currentPage} className={`grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 ${animDirection}`}>
                 {currentDisplayItems.map((item) => (
-                  <LinkCardSite2 key={item.id} data={item} openNewTab={openInNewTab} />
+                  <LinkCardSite2 key={item.id} data={item} />
                 ))}
               </div>
 
@@ -712,7 +792,7 @@
                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
                                   <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
                                     <div className="grid grid-cols-7 gap-2">
-                                      {availableColors.map((colorClass) => (
+                                      {AVAILABLE_COLORS.map((colorClass) => (
                                         <button
                                           key={colorClass}
                                           onClick={() => updateItem(activeItem.id, 'color', colorClass)}
@@ -742,9 +822,12 @@
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Modo de Abertura</label>
                                     <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
                                         <span className="text-[10px] font-bold text-gray-300">
-                                            {tempOpenInNewTab ? 'BLANK ON' : 'BLANK OFF'}
+                                            {activeItem.openNewTab !== false ? 'NOVA ABA' : 'MESMA ABA'}
                                         </span>
-                                        <ToggleSwitch checked={tempOpenInNewTab} onChange={setTempOpenInNewTab} />
+                                        <ToggleSwitch 
+                                          checked={activeItem.openNewTab !== false} 
+                                          onChange={(val) => updateItem(activeItem.id, 'openNewTab', val)} 
+                                        />
                                     </div>
                                 </div>
                              </div>
@@ -757,7 +840,7 @@
 
                 <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-end items-center gap-3">
                     <button 
-                      onClick={() => setIsConfigOpen(false)} 
+                      onClick={() => setIsConfigOpen(false)} c
                       className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-4 py-2 transition-all duration-300 rounded hover:bg-white/5"
                     >
                       Descartar
@@ -781,4 +864,3 @@
   </script>
 </body>
 </html>
-

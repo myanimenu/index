@@ -29,7 +29,7 @@
       color: #f8fafc;
       margin: 0;
       overflow-x: hidden;
-      overflow: hidden;
+      overflow-y: auto; /* Alterado para permitir scroll se necessário, mas geralmente hidden no app fixo */
     }
 
     /* --- UI --- */
@@ -40,7 +40,7 @@
       /* Animação simples de entrada */
       animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transform-origin: center center;
-      position: relative; /* Importante para o overlay de delete */
+      position: relative;
     }
 
     @keyframes modalEnter {
@@ -80,30 +80,6 @@
       to { opacity: 1; transform: translateX(0); }
     }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
-    .animate-float {
-      animation: float 6s ease-in-out infinite;
-    }
-    
-    @keyframes blob {
-      0% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(30px, -50px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
-      100% { transform: translate(0px, 0px) scale(1); }
-    }
-
-    .animate-blob {
-      animation: blob 7s infinite;
-    }
-
-    .animation-delay-2000 {
-      animation-delay: 2s;
-    }
-
     /* Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
@@ -119,7 +95,6 @@
       border-radius: 3px;
     }
 
-    /* Adicionado do Site 1 para o botão da seta funcionar igual */
     .fab-active-press:active {
       transform: scale(0.9) !important;
     }
@@ -181,8 +156,6 @@
     const { useState, useEffect, useCallback, memo, useMemo } = React;
 
     // --- UTILS & HELPERS ---
-    
-    // Gerador de ID seguro
     const generateSafeId = () => {
       if (window.crypto && window.crypto.randomUUID) {
         return window.crypto.randomUUID();
@@ -196,21 +169,26 @@
       { id: '2', title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true },
       { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "myhtmlist.html", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true },
       { id: '4', title: "sequelist", subtitle: "version-i", url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true, openNewTab: true },
-      { id: '5', title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "bg-indigo-500", visible: true, enabled: true, openNewTab: true },
+      { id: '5', title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true },
       { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true, openNewTab: true },
     ];
 
     const AVAILABLE_COLORS = [
       "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
       "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
-      "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500", "bg-white"
+      "bg-fuchsia-600", "bg-purple-600", "bg-white", "random"
+    ];
+    
+    const RANDOM_POOL = [
+      "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
+      "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
+      "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500"
     ];
 
     const ITEMS_PER_PAGE = 6;
 
     // --- HOOKS PERSONALIZADOS ---
 
-    // Hook para relógio e saudação
     const useClock = () => {
       const [time, setTime] = useState(new Date());
       const [greeting, setGreeting] = useState("");
@@ -237,18 +215,15 @@
       return { time, greeting, formattedDate };
     };
 
-    // Hook para Gerenciamento de Dados Persistentes
     const usePersistentData = (key, initialValue) => {
       const [data, setData] = useState(initialValue);
       const [isLoaded, setIsLoaded] = useState(false);
 
-      // Função de migração de schema
       const migrateData = useCallback((rawData) => {
         if (!Array.isArray(rawData)) return initialValue;
         
         return rawData.map(item => ({
           ...item,
-          // Garante que campos novos existam com valor padrão se estiverem faltando
           openNewTab: item.openNewTab !== undefined ? item.openNewTab : true,
           enabled: item.enabled !== undefined ? item.enabled : true,
           visible: item.visible !== undefined ? item.visible : true,
@@ -296,11 +271,20 @@
     });
 
     const LinkCardSite2 = memo(({ data, isPreview = false }) => {
+      const [displayColor] = useState(() => {
+          if (data.color === 'random') {
+              return RANDOM_POOL[Math.floor(Math.random() * RANDOM_POOL.length)];
+          }
+          return data.color;
+      });
+
+      const finalColor = data.color === 'random' ? displayColor : data.color;
+
       const textColorClass = useMemo(() => 
-        data.color 
-          ? data.color.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
+        finalColor 
+          ? finalColor.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
           : 'text-gray-400',
-      [data.color]);
+      [finalColor]);
         
       const isDisabled = !data.enabled && !isPreview;
       const WrapperTag = isDisabled ? 'div' : 'a';
@@ -318,7 +302,7 @@
 
       return (
         <WrapperTag {...WrapperProps}>
-          <div className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-500 ${data.color} mix-blend-screen`}></div>
+          <div className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-500 ${finalColor} mix-blend-screen`}></div>
           <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} transition-all duration-700 ease-out z-0`}>
              <i className={`ph-fill ${data.icon} text-[8rem] ${textColorClass}`}></i>
           </div>
@@ -334,7 +318,7 @@
                 {data.title}
               </h3>
             </div>
-            <div className={`w-8 h-1 rounded-full ${data.color} opacity-20 ${!isDisabled && 'group-hover:w-16 group-hover:opacity-80'} transition-all duration-500`}></div>
+            <div className={`w-8 h-1 rounded-full ${finalColor} opacity-20 ${!isDisabled && 'group-hover:w-16 group-hover:opacity-80'} transition-all duration-500`}></div>
           </div>
         </WrapperTag>
       );
@@ -351,43 +335,31 @@
 
     // --- APP PRINCIPAL ---
     const App = () => {
-      // Data Management
       const [items, setItems, isDataLoaded] = usePersistentData('site_config_v4', DEFAULT_CONFIG);
-      
-      // UI Logic Hooks
       const { time, greeting, formattedDate } = useClock();
 
-      // Local UI State
       const [isConfigOpen, setIsConfigOpen] = useState(false);
       const [isFabOpen, setIsFabOpen] = useState(false);
       const [isUltraLight, setIsUltraLight] = useState(true);
       
-      // Configuration UI State (Draft Mode)
       const [activeTabId, setActiveTabId] = useState(null);
       const [tempItems, setTempItems] = useState([]);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       const [draggedId, setDraggedId] = useState(null);
 
-      // Pagination State
       const [currentPage, setCurrentPage] = useState(0);
       const [animDirection, setAnimDirection] = useState('slide-in-right');
 
-      // Efeito para tema leve/ultra-light
       useEffect(() => {
         if (isUltraLight) document.body.classList.add('ultra-light');
         else document.body.classList.remove('ultra-light');
       }, [isUltraLight]);
 
-      // --- HANDLERS DA CONFIGURAÇÃO ---
-
       const openConfig = useCallback(() => {
-        // Clona profundamente os itens para edição segura (Draft Mode)
         setTempItems(JSON.parse(JSON.stringify(items)));
         
-        // Define aba ativa
         if (items.length > 0) {
-            // Se já tem uma aba ativa e ela ainda existe, mantém. Se não, pega a primeira.
             const exists = activeTabId && items.find(i => i.id === activeTabId);
             if (!exists) setActiveTabId(items[0].id);
         }
@@ -401,7 +373,6 @@
         setItems(tempItems);
         setIsConfigOpen(false);
         
-        // Ajusta paginação se necessário após salvar
         const visibleCount = tempItems.filter(i => i.visible).length;
         const maxPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
         if (currentPage >= maxPages && maxPages > 0) {
@@ -410,7 +381,7 @@
       }, [tempItems, setItems, currentPage]);
 
       const addNewLink = useCallback(() => {
-        const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-indigo-600", "bg-pink-600"];
+        const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-pink-600", "random"];
         const newItem = {
           id: generateSafeId(),
           title: "Novo Link", 
@@ -423,13 +394,11 @@
           openNewTab: true
         };
         
-        // Adiciona direto ao estado oficial e abre modal em modo de rascunho
         const newItemsList = [...items, newItem];
         setItems(newItemsList);
-        setTempItems(newItemsList); // Atualiza também o temporário
+        setTempItems(newItemsList);
         setActiveTabId(newItem.id);
         
-        // Vai para a última página
         const newTotalPages = Math.ceil(newItemsList.filter(i => i.visible).length / ITEMS_PER_PAGE);
         setCurrentPage(Math.max(0, newTotalPages - 1));
         
@@ -438,8 +407,6 @@
         setIsFabOpen(false);
       }, [items, setItems]);
 
-      // CRUD de Itens (Modo Rascunho/Draft)
-      
       const updateItem = useCallback((id, field, value) => {
         setTempItems(prev => prev.map(item => 
           item.id === id ? { ...item, [field]: value } : item
@@ -461,7 +428,6 @@
         const newTemp = tempItems.filter(item => item.id !== idToDelete);
         setTempItems(newTemp);
         
-        // Se deletou o item ativo, muda o foco
         if (activeTabId === idToDelete) {
           setActiveTabId(newTemp[0]?.id || null);
         }
@@ -482,15 +448,12 @@
         });
       }, []);
 
-      // --- LÓGICA DE PAGINAÇÃO ---
-      
       const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
       const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
       
-      // Corrige página se itens forem deletados e a página atual ficar vazia
       useEffect(() => {
          if (currentPage >= totalPages && totalPages > 0) {
-            setCurrentPage(totalPages - 1);
+           setCurrentPage(totalPages - 1);
          }
       }, [totalPages, currentPage]);
 
@@ -513,25 +476,21 @@
         (currentPage + 1) * ITEMS_PER_PAGE
       ), [visibleItems, currentPage]);
 
-      // Gradiente baseado na hora
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
           : "from-yellow-200 via-orange-200 to-yellow-200";
 
-      // Item ativo no modal
       const activeItem = useMemo(() => 
          tempItems.find(i => i.id === activeTabId) || tempItems[0], 
       [tempItems, activeTabId]);
 
-      // Evita piscar enquanto carrega do localStorage
-      if (!isDataLoaded) return null; 
+      if (!isDataLoaded) return null;
 
       return (
         <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-28">
           <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
-            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full filter blur-[100px] animate-blob"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
+            {/* REMOVIDO: Blobs e animações pesadas de fundo */}
           </div>
 
           <div className="fixed bottom-2 right-4 z-50 flex flex-col items-center gap-3">
@@ -571,9 +530,11 @@
 
           <main className="w-full max-w-4xl z-10 p-4 relative">
             <header className="relative flex flex-col items-center justify-center mb-16 select-none group">
+                {/* Efeito Hover mantido pois é interação e não animação constante pesada, mas pode ser removido se quiser zero efeitos */}
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-                <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl animate-float`}>
+                {/* REMOVIDO: animate-float */}
+                <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl`}>
                     {greeting}
                 </h1>
                 
@@ -714,7 +675,7 @@
                   <div className="flex flex-col">
                     <div className="px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a] bg-[#0c0c0c]">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg ${activeItem.color} flex items-center justify-center bg-opacity-20`}>
+                        <div className={`w-8 h-8 rounded-lg ${activeItem.color === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : activeItem.color} flex items-center justify-center bg-opacity-20`}>
                           <i className={`ph-bold ${activeItem.icon} text-base text-white`}></i>
                         </div>
                         <div className="flex flex-col leading-none">
@@ -792,18 +753,39 @@
                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor do Tema</label>
                                   <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
                                     <div className="grid grid-cols-7 gap-2">
-                                      {AVAILABLE_COLORS.map((colorClass) => (
-                                        <button
-                                          key={colorClass}
-                                          onClick={() => updateItem(activeItem.id, 'color', colorClass)}
-                                          title={colorClass.replace('bg-', '').replace('-600', '').replace('-500', '')}
-                                          className={`h-6 rounded-md ${colorClass} transition-all duration-200 ${
-                                            activeItem.color === colorClass
-                                              ? 'ring-2 ring-white scale-105 shadow-lg'
-                                              : 'opacity-40 hover:opacity-100 hover:scale-105'
-                                          }`}
-                                        />
-                                      ))}
+                                      {AVAILABLE_COLORS.map((colorClass) => {
+                                        // LÓGICA DE EXCLUSIVIDADE: Verifica se alguém (além do item atual) tem essa cor
+                                        // Random não é exclusivo. Branco AGORA É EXCLUSIVO.
+                                        const isExclusive = colorClass !== 'random';
+                                        
+                                        const owner = isExclusive 
+                                            ? tempItems.find(i => i.color === colorClass && i.id !== activeItem.id)
+                                            : null;
+
+                                        return (
+                                          <button
+                                            key={colorClass}
+                                            onClick={() => !owner && updateItem(activeItem.id, 'color', colorClass)}
+                                            disabled={!!owner}
+                                            title={owner ? `Usado por ${owner.title}` : colorClass}
+                                            className={`h-6 rounded-md relative flex items-center justify-center transition-all duration-200 ${
+                                              activeItem.color === colorClass
+                                                ? 'ring-2 ring-white scale-105 shadow-lg'
+                                                : owner ? 'opacity-50 cursor-not-allowed border border-white/10' : 'opacity-40 hover:opacity-100 hover:scale-105'
+                                            }`}
+                                          >
+                                            {/* Renderiza a cor ou o gradiente random */}
+                                            <div className={`w-full h-full rounded-md ${colorClass === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : colorClass}`}></div>
+                                            
+                                            {/* Se tiver dono, mostra o ícone do dono em cima */}
+                                            {owner && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
+                                                      <i className={`ph-bold ${owner.icon} text-white text-xs`}></i>
+                                                </div>
+                                            )}
+                                          </button>
+                                        );
+                                      })}
                                     </div>
                                   </div>
                              </div>
@@ -840,7 +822,7 @@
 
                 <div className="p-3 bg-[#050505] border-t border-[#1a1a1a] flex justify-end items-center gap-3">
                     <button 
-                      onClick={() => setIsConfigOpen(false)} c
+                      onClick={() => setIsConfigOpen(false)}
                       className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest px-4 py-2 transition-all duration-300 rounded hover:bg-white/5"
                     >
                       Descartar

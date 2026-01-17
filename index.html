@@ -29,7 +29,7 @@
       color: #f8fafc;
       margin: 0;
       overflow-x: hidden;
-      /* O overflow-y será controlado pelo React */
+      /* O overflow-y será controlado pelo React/Browser */
     }
 
     /* --- UI --- */
@@ -164,12 +164,12 @@
 
     // --- CONFIGURAÇÃO PADRÃO ---
     const DEFAULT_CONFIG = [
-      { id: '1', title: "watched-animes", subtitle: "version-x", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Watched", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true, openNewTab: true },
-      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "https://www.anime-planet.com/users/abnerssk/lists?name=Seasonal", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true },
-      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "myhtmlist.html", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true },
-      { id: '4', title: "sequelist", subtitle: "version-i", url: "https://www.anime-planet.com/users/abnerssk/lists/continuations-upcoming-1399329", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true, openNewTab: true },
-      { id: '5', title: "my-list", subtitle: "version-v", url: "https://www.anime-planet.com/users/abnerssk/lists/a2w--all-animes-1406896", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true },
-      { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "https://www.anime-planet.com/users/abnerssk/lists?sort=modified&name=Ranking", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true, openNewTab: true },
+      { id: '1', title: "watched-animes", subtitle: "version-x", url: "#", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true, openNewTab: true },
+      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "#", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true },
+      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "#", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true },
+      { id: '4', title: "sequelist", subtitle: "version-i", url: "#", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true, openNewTab: true },
+      { id: '5', title: "my-list", subtitle: "version-v", url: "#", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true },
+      { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "#", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true, openNewTab: true },
     ];
 
     const AVAILABLE_COLORS = [
@@ -347,13 +347,12 @@
 
       const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
       
-      // Controle automático da Scrollbar
+      // Controle automático da Scrollbar - CORRIGIDO
       useEffect(() => {
-        if (visibleItems.length <= 6) {
-            document.body.style.overflowY = 'hidden';
-        } else {
-            document.body.style.overflowY = 'auto';
-        }
+        // Correção: Definir overflowY sempre como auto.
+        // A lógica anterior escondia a barra se tivesse <= 6 itens, 
+        // o que travava o scroll no mobile onde esses 6 itens ocupam mais que a tela.
+        document.body.style.overflowY = 'auto';
 
         return () => {
               document.body.style.overflowY = 'auto'; // Reset ao desmontar
@@ -664,8 +663,8 @@
 
                       <div className="pt-1">
                           <button
-                              onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                              className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+                            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                            className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
                           >
                             <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'} transition-transform duration-300 ${showAdvancedSettings ? 'rotate-180' : ''}`}></i>
                             {showAdvancedSettings ? 'Menos configurações' : 'Mais configurações'}

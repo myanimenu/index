@@ -29,8 +29,7 @@
       color: #f8fafc;
       margin: 0;
       overflow-x: hidden;
-      overflow-y: auto; /* Alterado para permitir scroll se necessário, mas geralmente hidden no app fixo */
-      overflow: hidden;
+      /* O overflow-y será controlado pelo React */
     }
 
     /* --- UI --- */
@@ -38,7 +37,6 @@
       background: linear-gradient(135deg, #121212 0%, #0d0d0d 100%);
       border: 1px solid #2a2a2a;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-      /* Animação simples de entrada */
       animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transform-origin: center center;
       position: relative;
@@ -186,8 +184,6 @@
       "bg-fuchsia-600", "bg-purple-600", "bg-indigo-500"
     ];
 
-    const ITEMS_PER_PAGE = 6;
-
     // --- HOOKS PERSONALIZADOS ---
 
     const useClock = () => {
@@ -274,7 +270,7 @@
     const LinkCardSite2 = memo(({ data, isPreview = false }) => {
       const [displayColor] = useState(() => {
           if (data.color === 'random') {
-              return RANDOM_POOL[Math.floor(Math.random() * RANDOM_POOL.length)];
+            return RANDOM_POOL[Math.floor(Math.random() * RANDOM_POOL.length)];
           }
           return data.color;
       });
@@ -349,8 +345,20 @@
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       const [draggedId, setDraggedId] = useState(null);
 
-      const [currentPage, setCurrentPage] = useState(0);
-      const [animDirection, setAnimDirection] = useState('slide-in-right');
+      const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
+      
+      // Controle automático da Scrollbar
+      useEffect(() => {
+        if (visibleItems.length <= 6) {
+            document.body.style.overflowY = 'hidden';
+        } else {
+            document.body.style.overflowY = 'auto';
+        }
+
+        return () => {
+              document.body.style.overflowY = 'auto'; // Reset ao desmontar
+        };
+      }, [visibleItems.length]);
 
       useEffect(() => {
         if (isUltraLight) document.body.classList.add('ultra-light');
@@ -373,13 +381,7 @@
       const saveConfig = useCallback(() => {
         setItems(tempItems);
         setIsConfigOpen(false);
-        
-        const visibleCount = tempItems.filter(i => i.visible).length;
-        const maxPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
-        if (currentPage >= maxPages && maxPages > 0) {
-            setCurrentPage(maxPages - 1);
-        }
-      }, [tempItems, setItems, currentPage]);
+      }, [tempItems, setItems]);
 
       const addNewLink = useCallback(() => {
         const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-pink-600", "random"];
@@ -395,18 +397,14 @@
           openNewTab: true
         };
         
-        const newItemsList = [...items, newItem];
-        setItems(newItemsList);
+        const sourceList = tempItems.length > 0 ? tempItems : items;
+        const newItemsList = [...sourceList, newItem];
+        
         setTempItems(newItemsList);
         setActiveTabId(newItem.id);
         
-        const newTotalPages = Math.ceil(newItemsList.filter(i => i.visible).length / ITEMS_PER_PAGE);
-        setCurrentPage(Math.max(0, newTotalPages - 1));
-        
         setShowAdvancedSettings(false);
-        setIsConfigOpen(true);
-        setIsFabOpen(false);
-      }, [items, setItems]);
+      }, [items, tempItems]);
 
       const updateItem = useCallback((id, field, value) => {
         setTempItems(prev => prev.map(item => 
@@ -449,34 +447,6 @@
         });
       }, []);
 
-      const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
-      const totalPages = Math.ceil(visibleItems.length / ITEMS_PER_PAGE);
-      
-      useEffect(() => {
-         if (currentPage >= totalPages && totalPages > 0) {
-           setCurrentPage(totalPages - 1);
-         }
-      }, [totalPages, currentPage]);
-
-      const nextPage = useCallback(() => {
-        if (currentPage < totalPages - 1) {
-          setAnimDirection('slide-in-right');
-          setCurrentPage(p => p + 1);
-        }
-      }, [currentPage, totalPages]);
-
-      const prevPage = useCallback(() => {
-        if (currentPage > 0) {
-          setAnimDirection('slide-in-left');
-          setCurrentPage(p => p - 1);
-        }
-      }, [currentPage]);
-
-      const currentDisplayItems = useMemo(() => visibleItems.slice(
-        currentPage * ITEMS_PER_PAGE, 
-        (currentPage + 1) * ITEMS_PER_PAGE
-      ), [visibleItems, currentPage]);
-
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
@@ -489,22 +459,11 @@
       if (!isDataLoaded) return null;
 
       return (
-        <div className="min-h-screen flex flex-col items-center relative overflow-hidden pt-20 pb-28">
+        <div className="min-h-screen flex flex-col items-center relative overflow-x-hidden pt-20 pb-10">
           <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
-            {/* REMOVIDO: Blobs e animações pesadas de fundo */}
           </div>
 
           <div className="fixed bottom-2 right-4 z-50 flex flex-col items-center gap-3">
-            <button
-              onClick={addNewLink}
-              className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
-                isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-16 opacity-0 scale-75 pointer-events-none'
-              } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
-              title="Adicionar Novo Link"
-            >
-              <i className="ph ph-plus text-2xl transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-90"></i>
-            </button>
-
             <button
               onClick={() => { openConfig(); setIsFabOpen(false); }}
               className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
@@ -531,10 +490,8 @@
 
           <main className="w-full max-w-4xl z-10 p-4 relative">
             <header className="relative flex flex-col items-center justify-center mb-16 select-none group">
-                {/* Efeito Hover mantido pois é interação e não animação constante pesada, mas pode ser removido se quiser zero efeitos */}
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-                {/* REMOVIDO: animate-float */}
                 <h1 className={`relative z-10 font-black tracking-tighter uppercase text-6xl md:text-8xl mb-2 bg-clip-text text-transparent bg-gradient-to-r ${greetingGradient} drop-shadow-2xl`}>
                     {greeting}
                 </h1>
@@ -551,55 +508,12 @@
             </header>
 
             <div className="relative">
-              {currentPage > 0 && (
-                <button 
-                  onClick={prevPage}
-                  className="absolute left-[-60px] md:left-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
-                  title="Anterior"
-                >
-                  <i className="ph-bold ph-caret-left text-3xl"></i>
-                </button>
-              )}
-
-              <div key={currentPage} className={`grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 ${animDirection}`}>
-                {currentDisplayItems.map((item) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                {visibleItems.map((item) => (
                   <LinkCardSite2 key={item.id} data={item} />
                 ))}
               </div>
-
-              {currentPage < totalPages - 1 && (
-                <button 
-                  onClick={nextPage}
-                  className="absolute right-[-60px] md:right-[-80px] top-1/2 transform -translate-y-1/2 z-20 text-white/20 hover:text-white hover:scale-110 transition-all duration-300 p-2 hidden md:block"
-                  title="Próximo"
-                >
-                  <i className="ph-bold ph-caret-right text-3xl"></i>
-                </button>
-              )}
-              
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-6 md:hidden">
-                   {Array.from({ length: totalPages }).map((_, idx) => (
-                     <div 
-                       key={idx}
-                       onClick={() => setCurrentPage(idx)}
-                       className={`h-2 rounded-full transition-all duration-300 ${currentPage === idx ? 'w-6 bg-white' : 'w-2 bg-white/20'}`}
-                     />
-                   ))}
-                </div>
-              )}
             </div>
-            
-            {totalPages > 1 && (
-                <div className="hidden md:flex justify-center mt-8 gap-1">
-                   {Array.from({ length: totalPages }).map((_, idx) => (
-                     <div 
-                       key={idx}
-                       className={`h-1 rounded-full transition-all duration-500 ${currentPage === idx ? 'w-12 bg-white/40' : 'w-2 bg-white/10'}`}
-                     />
-                   ))}
-                </div>
-            )}
           </main>
 
           {isConfigOpen && activeItem && (
@@ -669,6 +583,17 @@
                         </span>
                       </button>
                     ))}
+                    
+                    <button
+                        onClick={addNewLink}
+                        className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 text-green-500 hover:bg-green-500/10 hover:text-green-400 border border-transparent hover:border-green-500/20"
+                        title="Adicionar Novo Link"
+                    >
+                        <i className="ph-bold ph-plus text-sm"></i>
+                        <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                          Adicionar
+                        </span>
+                    </button>
                   </div>
                 </div>
 
@@ -742,8 +667,8 @@
                               onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                               className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
                           >
-                              <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'} transition-transform duration-300 ${showAdvancedSettings ? 'rotate-180' : ''}`}></i>
-                              {showAdvancedSettings ? 'Menos configurações' : 'Mais configurações'}
+                            <i className={`ph-bold ${showAdvancedSettings ? 'ph-caret-up' : 'ph-caret-down'} transition-transform duration-300 ${showAdvancedSettings ? 'rotate-180' : ''}`}></i>
+                            {showAdvancedSettings ? 'Menos configurações' : 'Mais configurações'}
                           </button>
                       </div>
 
@@ -755,8 +680,7 @@
                                   <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
                                     <div className="grid grid-cols-7 gap-2">
                                       {AVAILABLE_COLORS.map((colorClass) => {
-                                        // LÓGICA DE EXCLUSIVIDADE: Verifica se alguém (além do item atual) tem essa cor
-                                        // Random não é exclusivo. Branco AGORA É EXCLUSIVO.
+                                        // LÓGICA DE EXCLUSIVIDADE
                                         const isExclusive = colorClass !== 'random';
                                         
                                         const owner = isExclusive 
@@ -771,14 +695,14 @@
                                             title={owner ? `Usado por ${owner.title}` : colorClass}
                                             className={`h-6 rounded-md relative flex items-center justify-center transition-all duration-200 ${
                                               activeItem.color === colorClass
-                                                ? 'ring-2 ring-white scale-105 shadow-lg'
-                                                : owner ? 'opacity-50 cursor-not-allowed border border-white/10' : 'opacity-40 hover:opacity-100 hover:scale-105'
+                                                ? 'ring-2 ring-white scale-105 shadow-lg opacity-100' // Selecionado
+                                                : owner 
+                                                  ? 'opacity-50 cursor-not-allowed border border-white/10' // Usado (Dono existe)
+                                                  : 'opacity-20 hover:opacity-100 hover:scale-110 border border-transparent' // Não usado (Alterado aqui)
                                             }`}
                                           >
-                                            {/* Renderiza a cor ou o gradiente random */}
-                                            <div className={`w-full h-full rounded-md ${colorClass === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : colorClass}`}></div>
+                                            <div className={`w-full h-full rounded-md shadow-sm ${colorClass === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : colorClass}`}></div>
                                             
-                                            {/* Se tiver dono, mostra o ícone do dono em cima */}
                                             {owner && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
                                                       <i className={`ph-bold ${owner.icon} text-white text-xs`}></i>
@@ -847,4 +771,3 @@
   </script>
 </body>
 </html>
-

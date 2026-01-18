@@ -47,9 +47,16 @@
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
-    /* --- Links (Novo Visual) --- */
+    /* --- Links (Novo Visual OTIMIZADO) --- */
     .card-hover {
-      transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      /* REMOVIDO transition: all - Otimização de Performance */
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                  box-shadow 0.3s ease, 
+                  border-color 0.3s ease;
+      
+      /* Dica para o navegador usar a GPU */
+      will-change: transform; 
+      
       border: 1px solid rgba(255, 255, 255, 0.05);
       background: linear-gradient(145deg, #121212 0%, #0c0c0c 100%);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -57,8 +64,13 @@
 
     .card-hover:hover {
       transform: translateY(-5px);
-      border-color: rgba(255, 255, 255, 0.1);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Otimização dos ícones dentro do card */
+    .card-hover .icon-transition {
+        transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .slide-in-right {
@@ -299,23 +311,27 @@
 
       return (
         <WrapperTag {...WrapperProps}>
-          <div className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-500 ${finalColor} mix-blend-screen`}></div>
-          <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} transition-all duration-700 ease-out z-0`}>
+          {/* Fundo colorido que brilha - Otimizado para animar apenas Opacidade */}
+          <div className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-300 ease-in-out ${finalColor} mix-blend-screen will-change-opacity`}></div>
+          
+          {/* Ícone de fundo gigante - Otimizado com classe icon-transition */}
+          <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} icon-transition z-0`}>
              <i className={`ph-fill ${data.icon} text-[8rem] ${textColorClass}`}></i>
           </div>
 
           <div className="relative z-10 flex flex-col h-full justify-between">
             <div>
               <div className="mb-2">
-                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ${!isDisabled && 'group-hover:text-gray-400'} transition-colors`}>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ${!isDisabled && 'group-hover:text-gray-400'} transition-colors duration-300`}>
                   {data.subtitle}
                 </span>
               </div>
-              <h3 className={`font-bold text-2xl md:text-3xl text-white tracking-tight leading-none ${!isDisabled && 'group-hover:text-white'} transition-colors`}>
+              <h3 className={`font-bold text-2xl md:text-3xl text-white tracking-tight leading-none ${!isDisabled && 'group-hover:text-white'} transition-colors duration-300`}>
                 {data.title}
               </h3>
             </div>
-            <div className={`w-8 h-1 rounded-full ${finalColor} opacity-20 ${!isDisabled && 'group-hover:w-16 group-hover:opacity-80'} transition-all duration-500`}></div>
+            {/* Barra de progresso visual */}
+            <div className={`w-8 h-1 rounded-full ${finalColor} opacity-20 ${!isDisabled && 'group-hover:w-16 group-hover:opacity-80'} transition-all duration-300 cubic-bezier(0.2, 0.8, 0.2, 1)`}></div>
           </div>
         </WrapperTag>
       );
@@ -347,15 +363,11 @@
 
       const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
       
-      // Controle automático da Scrollbar - CORRIGIDO
+      // Controle automático da Scrollbar
       useEffect(() => {
-        // Correção: Definir overflowY sempre como auto.
-        // A lógica anterior escondia a barra se tivesse <= 6 itens, 
-        // o que travava o scroll no mobile onde esses 6 itens ocupam mais que a tela.
         document.body.style.overflowY = 'auto';
-
         return () => {
-              document.body.style.overflowY = 'auto'; // Reset ao desmontar
+              document.body.style.overflowY = 'auto';
         };
       }, [visibleItems.length]);
 

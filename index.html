@@ -160,7 +160,7 @@
       return Date.now().toString(36) + Math.random().toString(36).substr(2);
     };
 
-    // --- CONFIGURAÇÃO PADRÃO ---
+    // --- CONFIGURAÇÃO PADRÃO (AGORA COM 6 LINKS) ---
     const DEFAULT_CONFIG = [
       { 
         id: '1', 
@@ -178,6 +178,9 @@
       { id: '2', title: "seasonalist", subtitle: "version-ii", url: "#", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
       { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "#", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
       { id: '5', title: "my-list", subtitle: "version-v", url: "#", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
+      // Novos links adicionados para totalizar 6
+      { id: '6', title: "anilist", subtitle: "tracking", url: "https://anilist.co", icon: "ph-list-magnifying-glass", color: "bg-blue-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
+      { id: '7', title: "mangadex", subtitle: "reader", url: "https://mangadex.org", icon: "ph-book-open", color: "bg-orange-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
     ];
 
     const AVAILABLE_COLORS = [
@@ -233,7 +236,7 @@
           enabled: item.enabled !== undefined ? item.enabled : true,
           visible: item.visible !== undefined ? item.visible : true,
           activeMode: item.activeMode || 'main', 
-          sublist: item.sublist || null, // Garante que a sublista persista se existir
+          sublist: item.sublist || null, 
           id: item.id || generateSafeId()
         }));
       }, [initialValue]);
@@ -279,7 +282,6 @@
 
     const LinkCardSite2 = memo(({ data, onToggleMode, isPreview = false }) => {
       const isSublistActive = data.activeMode === 'sub' && data.sublist;
-      // Garante que usamos o conteúdo correto (Principal ou Sublista)
       const currentContent = isSublistActive ? data.sublist : data;
 
       const title = currentContent.title || data.title;
@@ -344,7 +346,6 @@
           </div>
 
           {/* Botão de Toggle Sublista */}
-          {/* CORREÇÃO AQUI: Removemos !isDisabled para o botão aparecer sempre */}
           {data.sublist && (
              <div className="absolute top-0 right-6 z-30 toggle-btn">
                 <button
@@ -353,7 +354,6 @@
                         e.stopPropagation();
                         onToggleMode(data.id);
                     }}
-                    // CORREÇÃO AQUI: Estilo preto para quando está ativo
                     className={`h-7 w-14 rounded-b-xl flex items-center justify-center transition-all duration-300 backdrop-blur-md border-b border-x shadow-lg hover:scale-110 active:scale-95 hover:h-9 
                     ${isSublistActive 
                         ? 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10' 
@@ -394,7 +394,8 @@
 
     // --- APP PRINCIPAL ---
     const App = () => {
-      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v5_sublists', DEFAULT_CONFIG);
+      // CORREÇÃO: Mudamos a chave para 'v6_fixed' para garantir que os novos 6 links carreguem
+      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v6_fixed', DEFAULT_CONFIG);
       const { time, greeting, formattedDate } = useClock();
 
       const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -494,6 +495,7 @@
             }
 
             setEditingSublist(true);
+            const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-pink-600", "random"];
             return {
                 ...item,
                 sublist: {
@@ -501,7 +503,7 @@
                     subtitle: "Descrição",
                     url: item.url,
                     icon: "ph-list-star",
-                    color: "bg-purple-600",
+                    color: colorPool[Math.floor(Math.random() * colorPool.length)],
                     enabled: true,
                     openNewTab: true
                 }

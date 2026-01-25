@@ -29,7 +29,6 @@
       color: #f8fafc;
       margin: 0;
       overflow-x: hidden;
-      /* O overflow-y será controlado pelo React/Browser */
     }
 
     /* --- UI --- */
@@ -49,14 +48,10 @@
 
     /* --- Links (Novo Visual OTIMIZADO) --- */
     .card-hover {
-      /* REMOVIDO transition: all - Otimização de Performance */
       transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
                   box-shadow 0.3s ease, 
                   border-color 0.3s ease;
-      
-      /* Dica para o navegador usar a GPU */
       will-change: transform; 
-      
       border: 1px solid rgba(255, 255, 255, 0.05);
       background: linear-gradient(145deg, #121212 0%, #0c0c0c 100%);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -64,7 +59,6 @@
 
     .card-hover:hover {
       transform: translateY(-5px);
-      border-color: rgba(255, 255, 255, 0.15);
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     }
 
@@ -73,22 +67,14 @@
         transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    .slide-in-right {
-      animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
-    
-    .slide-in-left {
-      animation: slideInLeft 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    /* Animação de troca de sublista */
+    .content-swap-enter {
+        animation: fadeScaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    @keyframes slideInLeft {
-      from { opacity: 0; transform: translateX(-20px); }
-      to { opacity: 1; transform: translateX(0); }
+    @keyframes fadeScaleIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
     }
 
     /* Scrollbar */
@@ -176,12 +162,22 @@
 
     // --- CONFIGURAÇÃO PADRÃO ---
     const DEFAULT_CONFIG = [
-      { id: '1', title: "watched-animes", subtitle: "version-x", url: "#", icon: "ph-eye", color: "bg-green-600", visible: true, enabled: true, openNewTab: true },
-      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "#", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true },
-      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "#", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true },
-      { id: '4', title: "sequelist", subtitle: "version-i", url: "#", icon: "ph-book-open", color: "bg-cyan-600", visible: true, enabled: true, openNewTab: true },
-      { id: '5', title: "my-list", subtitle: "version-v", url: "#", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true },
-      { id: '6', title: "my-ranks-lists", subtitle: "version-vii", url: "#", icon: "ph-crown", color: "bg-yellow-500", visible: true, enabled: true, openNewTab: true },
+      { 
+        id: '1', 
+        title: "watched-animes", 
+        subtitle: "version-x", 
+        url: "#", 
+        icon: "ph-eye", 
+        color: "bg-green-600", 
+        visible: true, 
+        enabled: true, 
+        openNewTab: true,
+        activeMode: 'main', 
+        sublist: null 
+      },
+      { id: '2', title: "seasonalist", subtitle: "version-ii", url: "#", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
+      { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "#", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
+      { id: '5', title: "my-list", subtitle: "version-v", url: "#", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
     ];
 
     const AVAILABLE_COLORS = [
@@ -189,7 +185,7 @@
       "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
       "bg-fuchsia-600", "bg-purple-600", "bg-white", "random"
     ];
-    
+      
     const RANDOM_POOL = [
       "bg-blue-600", "bg-sky-600", "bg-cyan-600", "bg-teal-600", "bg-green-600", 
       "bg-yellow-500", "bg-orange-600", "bg-red-600", "bg-rose-600", "bg-pink-600", 
@@ -236,6 +232,8 @@
           openNewTab: item.openNewTab !== undefined ? item.openNewTab : true,
           enabled: item.enabled !== undefined ? item.enabled : true,
           visible: item.visible !== undefined ? item.visible : true,
+          activeMode: item.activeMode || 'main', 
+          sublist: item.sublist || null, // Garante que a sublista persista se existir
           id: item.id || generateSafeId()
         }));
       }, [initialValue]);
@@ -279,55 +277,103 @@
       return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
     });
 
-    const LinkCardSite2 = memo(({ data, isPreview = false }) => {
+    const LinkCardSite2 = memo(({ data, onToggleMode, isPreview = false }) => {
+      const isSublistActive = data.activeMode === 'sub' && data.sublist;
+      // Garante que usamos o conteúdo correto (Principal ou Sublista)
+      const currentContent = isSublistActive ? data.sublist : data;
+
+      const title = currentContent.title || data.title;
+      const subtitle = currentContent.subtitle || data.subtitle;
+      const url = currentContent.url || data.url;
+      const icon = currentContent.icon || data.icon;
+      const color = currentContent.color || data.color;
+
       const [displayColor] = useState(() => {
-          if (data.color === 'random') {
+          if (color === 'random') {
             return RANDOM_POOL[Math.floor(Math.random() * RANDOM_POOL.length)];
           }
-          return data.color;
+          return color;
       });
 
-      const finalColor = data.color === 'random' ? displayColor : data.color;
+      const finalColor = color === 'random' ? displayColor : color;
 
       const textColorClass = useMemo(() => 
         finalColor 
           ? finalColor.replace('bg-', 'text-').replace('600', '400').replace('500', '400') 
           : 'text-gray-400',
       [finalColor]);
-        
-      const isDisabled = !data.enabled && !isPreview;
+      
+      const isDisabled = !currentContent.enabled && !isPreview;
       const WrapperTag = isDisabled ? 'div' : 'a';
-      const shouldOpenNewTab = data.openNewTab !== false;
+      
+      const shouldOpenNewTab = currentContent.openNewTab !== false;
+
+      const handleCardClick = (e) => {
+        if (isDisabled) {
+            e.preventDefault();
+            return;
+        }
+        if (e.target.closest('.toggle-btn')) {
+            e.preventDefault();
+            return;
+        }
+      };
+
+      const customBorderStyle = {}; 
 
       const WrapperProps = isDisabled ? {
         title: "Indisponível no momento",
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between border border-[#222] bg-[#0c0c0c] opacity-50 cursor-not-allowed`,
       } : {
-        href: data.url,
+        href: url,
         target: shouldOpenNewTab ? "_blank" : "_self",
         rel: shouldOpenNewTab ? "noopener noreferrer" : undefined,
+        onClick: handleCardClick,
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between card-hover cursor-pointer`,
+        style: customBorderStyle 
       };
 
       return (
         <WrapperTag {...WrapperProps}>
-          {/* Fundo colorido que brilha - Otimizado para animar apenas Opacidade */}
-          <div className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-300 ease-in-out ${finalColor} mix-blend-screen will-change-opacity`}></div>
+          {/* Fundo colorido */}
+          <div key={finalColor} className={`absolute inset-0 opacity-0 ${!isDisabled && 'group-hover:opacity-5'} transition-opacity duration-300 ease-in-out ${finalColor} mix-blend-screen will-change-opacity`}></div>
           
-          {/* Ícone de fundo gigante - Otimizado com classe icon-transition */}
+          {/* Ícone de fundo */}
           <div className={`absolute -right-6 -bottom-8 opacity-[0.03] ${!isDisabled && 'group-hover:opacity-10 group-hover:scale-110 group-hover:-rotate-12'} icon-transition z-0`}>
-             <i className={`ph-fill ${data.icon} text-[8rem] ${textColorClass}`}></i>
+             <i className={`ph-fill ${icon} text-[8rem] ${textColorClass}`}></i>
           </div>
 
-          <div className="relative z-10 flex flex-col h-full justify-between">
+          {/* Botão de Toggle Sublista */}
+          {/* CORREÇÃO AQUI: Removemos !isDisabled para o botão aparecer sempre */}
+          {data.sublist && (
+             <div className="absolute top-0 right-6 z-30 toggle-btn">
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleMode(data.id);
+                    }}
+                    // CORREÇÃO AQUI: Estilo preto para quando está ativo
+                    className={`h-7 w-14 rounded-b-xl flex items-center justify-center transition-all duration-300 backdrop-blur-md border-b border-x shadow-lg hover:scale-110 active:scale-95 hover:h-9 
+                    ${isSublistActive 
+                        ? 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10' 
+                        : 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10'}`}
+                    title={isSublistActive ? "Voltar para lista principal" : `Ir para o ${data.sublist.title || 'Sublink'}`}
+                >
+                    <i className={`ph-bold ph-caret-double-right text-sm transition-transform duration-300 ${isSublistActive ? 'rotate-180' : ''}`}></i>
+                </button>
+             </div>
+          )}
+
+          <div className="relative z-10 flex flex-col h-full justify-between content-swap-enter" key={isSublistActive ? 'sub' : 'main'}>
             <div>
-              <div className="mb-2">
+              <div className="mb-2 flex items-center gap-2">
                 <span className={`text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ${!isDisabled && 'group-hover:text-gray-400'} transition-colors duration-300`}>
-                  {data.subtitle}
+                  {subtitle}
                 </span>
               </div>
-              <h3 className={`font-bold text-2xl md:text-3xl text-white tracking-tight leading-none ${!isDisabled && 'group-hover:text-white'} transition-colors duration-300`}>
-                {data.title}
+              <h3 className={`font-bold text-2xl md:text-3xl text-white tracking-tight leading-none ${!isDisabled && 'group-hover:text-white'} transition-colors duration-300 truncate pr-8`}>
+                {title}
               </h3>
             </div>
             {/* Barra de progresso visual */}
@@ -348,33 +394,26 @@
 
     // --- APP PRINCIPAL ---
     const App = () => {
-      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v4', DEFAULT_CONFIG);
+      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v5_sublists', DEFAULT_CONFIG);
       const { time, greeting, formattedDate } = useClock();
 
       const [isConfigOpen, setIsConfigOpen] = useState(false);
       const [isFabOpen, setIsFabOpen] = useState(false);
-      const [isUltraLight, setIsUltraLight] = useState(true);
       
       const [activeTabId, setActiveTabId] = useState(null);
       const [tempItems, setTempItems] = useState([]);
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+      const [showSublistDeleteConfirm, setShowSublistDeleteConfirm] = useState(false);
       const [draggedId, setDraggedId] = useState(null);
+
+      const [editingSublist, setEditingSublist] = useState(false);
 
       const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
       
-      // Controle automático da Scrollbar
       useEffect(() => {
         document.body.style.overflowY = 'auto';
-        return () => {
-              document.body.style.overflowY = 'auto';
-        };
       }, [visibleItems.length]);
-
-      useEffect(() => {
-        if (isUltraLight) document.body.classList.add('ultra-light');
-        else document.body.classList.remove('ultra-light');
-      }, [isUltraLight]);
 
       const openConfig = useCallback(() => {
         setTempItems(JSON.parse(JSON.stringify(items)));
@@ -387,6 +426,8 @@
         setShowAdvancedSettings(false);
         setIsConfigOpen(true);
         setShowDeleteConfirm(false);
+        setShowSublistDeleteConfirm(false);
+        setEditingSublist(false);
       }, [items, activeTabId]);
 
       const saveConfig = useCallback(() => {
@@ -405,28 +446,67 @@
           color: colorPool[Math.floor(Math.random() * colorPool.length)], 
           visible: true, 
           enabled: true,
-          openNewTab: true
+          openNewTab: true,
+          activeMode: 'main',
+          sublist: null
         };
         
-        const sourceList = tempItems.length > 0 ? tempItems : items;
-        const newItemsList = [...sourceList, newItem];
-        
-        setTempItems(newItemsList);
-        setActiveTabId(newItem.id);
-        
-        setShowAdvancedSettings(false);
-      }, [items, tempItems]);
+        if (isConfigOpen) {
+            setTempItems(prev => [...prev, newItem]);
+            setActiveTabId(newItem.id);
+        } else {
+            setTempItems([...items, newItem]); 
+            setActiveTabId(newItem.id);
+            setShowAdvancedSettings(false);
+            setIsConfigOpen(true);
+            setEditingSublist(false);
+        }
 
+      }, [items, isConfigOpen]);
+
+      // --- BACKEND LÓGICO MELHORADO ---
       const updateItem = useCallback((id, field, value) => {
-        setTempItems(prev => prev.map(item => 
-          item.id === id ? { ...item, [field]: value } : item
-        ));
-      }, []);
+        setTempItems(prev => prev.map(item => {
+            if (item.id !== id) return item;
 
-      const toggleEnabled = useCallback((id) => {
-        setTempItems(prev => prev.map(item => 
-          item.id === id ? { ...item, enabled: !item.enabled } : item
-        ));
+            // Se estiver editando sublista, atualiza DENTRO do objeto sublist
+            if (editingSublist && item.sublist) {
+                return {
+                    ...item,
+                    sublist: {
+                        ...item.sublist,
+                        [field]: value
+                    }
+                };
+            }
+            // Caso contrário, atualiza no item principal
+            return { ...item, [field]: value };
+        }));
+      }, [editingSublist]);
+
+      const toggleSublistCreation = useCallback((id) => {
+        setTempItems(prev => prev.map(item => {
+            if (item.id !== id) return item;
+
+            if (item.sublist) {
+                setEditingSublist(prevEdit => !prevEdit);
+                return item;
+            }
+
+            setEditingSublist(true);
+            return {
+                ...item,
+                sublist: {
+                    title: "Novo Link",
+                    subtitle: "Descrição",
+                    url: item.url,
+                    icon: "ph-list-star",
+                    color: "bg-purple-600",
+                    enabled: true,
+                    openNewTab: true
+                }
+            };
+        }));
       }, []);
 
       const deleteItem = useCallback((idToDelete) => {
@@ -440,8 +520,22 @@
         
         if (activeTabId === idToDelete) {
           setActiveTabId(newTemp[0]?.id || null);
+          setEditingSublist(false);
         }
       }, [tempItems, activeTabId]);
+
+      const deleteSublist = useCallback((idToModify) => {
+        setTempItems(prev => prev.map(item => {
+            if (item.id !== idToModify) return item;
+            
+            return {
+                ...item,
+                sublist: null,
+                activeMode: 'main'
+            };
+        }));
+        setEditingSublist(false);
+      }, []);
 
       const moveItem = useCallback((fromId, toId) => {
         if (fromId === toId) return;
@@ -458,14 +552,34 @@
         });
       }, []);
 
+      const toggleCardMode = useCallback((id) => {
+        setItems(prev => prev.map(item => {
+            if (item.id !== id) return item;
+            const newMode = item.activeMode === 'sub' ? 'main' : 'sub';
+            return { ...item, activeMode: newMode };
+        }));
+      }, [setItems]);
+
       const isNight = greeting === "BOA NOITE";
       const greetingGradient = isNight 
           ? "from-indigo-300 via-purple-300 to-indigo-300" 
           : "from-yellow-200 via-orange-200 to-yellow-200";
 
       const activeItem = useMemo(() => 
-         tempItems.find(i => i.id === activeTabId) || tempItems[0], 
+          tempItems.find(i => i.id === activeTabId) || tempItems[0], 
       [tempItems, activeTabId]);
+
+      const editingData = useMemo(() => {
+          if (!activeItem) return {};
+          if (editingSublist && activeItem.sublist) return activeItem.sublist;
+          return activeItem;
+      }, [activeItem, editingSublist]);
+
+      useEffect(() => {
+          if (activeItem && editingSublist && !activeItem.sublist) {
+              setEditingSublist(false);
+          }
+      }, [activeTabId, activeItem]);
 
       if (!isDataLoaded) return null;
 
@@ -474,23 +588,35 @@
           <div className="fixed top-0 left-0 w-full h-full -z-10 bg-[#0a0a0a]">
           </div>
 
+          {/* FAB Button Stack */}
           <div className="fixed bottom-2 right-4 z-50 flex flex-col items-center gap-3">
+            
+            {/* BOTÃO NOVO LINK */}
+            <button
+              onClick={() => { addNewLink(); setIsFabOpen(false); }}
+              className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
+                isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-24 opacity-0 scale-50 pointer-events-none'
+              } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
+              title="Criar Nova Lista"
+              style={{ transitionDelay: isFabOpen ? '50ms' : '0ms' }}
+            >
+                <i className="ph-bold ph-plus text-xl transition-all duration-500 ease-in-out group-hover:rotate-90 group-hover:scale-110"></i>
+            </button>
+
+            {/* Botão Configurações */}
             <button
               onClick={() => { openConfig(); setIsFabOpen(false); }}
               className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
-                isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-75 pointer-events-none'
+                isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-75 pointer-events-none'
               } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
               title="Configurações"
             >
-              <svg 
-                viewBox="0 0 24 24" 
-                fill="currentColor" 
-                className="w-7 h-7 transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-90"
-              >
-                <path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65c-.03-.24-.24-.42-.49-.42h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-90">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65c-.03-.24-.24-.42-.49-.42h-4c-.25 0-.46.18-.49.42l.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
               </svg>
             </button>
 
+            {/* Toggle FAB */}
             <button
               onClick={() => setIsFabOpen(!isFabOpen)}
               className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 active:scale-90 border border-white/5 ${isFabOpen ? 'rotate-180 text-white opacity-100 bg-white/10' : 'rotate-0 text-white/30 hover:text-white bg-white/5 hover:bg-white/10'}`}
@@ -521,7 +647,7 @@
             <div className="relative">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                 {visibleItems.map((item) => (
-                  <LinkCardSite2 key={item.id} data={item} />
+                  <LinkCardSite2 key={item.id} data={item} onToggleMode={toggleCardMode} />
                 ))}
               </div>
             </div>
@@ -531,7 +657,7 @@
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-2">
               <div className="config-modal rounded-xl w-full max-w-2xl flex flex-col max-h-[85vh] h-auto shadow-2xl overflow-hidden relative">
                 
-                {/* --- POP-UP DE CONFIRMAÇÃO --- */}
+                {/* --- POP-UP DE CONFIRMAÇÃO (DELETAR LINK) --- */}
                 {showDeleteConfirm && (
                     <div className="absolute inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-sm">
                         <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 animate-bounce">
@@ -555,12 +681,43 @@
                                 }}
                                 className="px-5 py-2.5 rounded-lg bg-red-600 border border-red-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 hover:shadow-lg hover:shadow-red-900/30 transition-all duration-200"
                             >
-                              Excluir
+                              Excluir Link
                             </button>
                         </div>
                     </div>
                 )}
 
+                {/* --- POP-UP DE CONFIRMAÇÃO (DELETAR SUBLISTA) --- */}
+                {showSublistDeleteConfirm && (
+                    <div className="absolute inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-sm">
+                        <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 animate-bounce">
+                            <i className="ph-bold ph-code text-3xl text-indigo-500"></i>
+                        </div>
+                        <h3 className="text-white font-black text-xl uppercase tracking-wider mb-2">Excluir Sublink</h3>
+                        <p className="text-gray-400 text-sm max-w-xs mb-6 font-medium">
+                            Você está prestes a excluir o Sublink de <span className="text-white">"{activeItem.title}"</span><br/>O link principal será mantido
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowSublistDeleteConfirm(false)}
+                                className="px-5 py-2.5 rounded-lg bg-[#222] border border-[#333] text-gray-300 text-xs font-bold uppercase tracking-widest hover:bg-[#333] hover:text-white transition-all duration-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    deleteSublist(activeItem.id);
+                                    setShowSublistDeleteConfirm(false);
+                                }}
+                                className="px-5 py-2.5 rounded-lg bg-indigo-600 border border-indigo-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-900/30 transition-all duration-200"
+                            >
+                              Excluir Sublink
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- HEADER DA MODAL (TABS) --- */}
                 <div className="flex-none flex items-center bg-[#050505] border-b border-[#1a1a1a] h-12 pr-2">
                   <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-scrollbar horizontal-scrollbar h-full px-2">
                     {tempItems.map((item) => (
@@ -580,7 +737,10 @@
                           setDraggedId(null);
                         }}
                         onDragEnd={() => setDraggedId(null)}
-                        onClick={() => setActiveTabId(item.id)}
+                        onClick={() => {
+                            setActiveTabId(item.id);
+                            setEditingSublist(false);
+                        }}
                         className={`flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 cursor-grab active:cursor-grabbing ${
                           activeTabId === item.id
                             ? 'bg-white/15 text-white shadow-lg'
@@ -592,62 +752,92 @@
                         <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                           {item.title}
                         </span>
+                        {/* AVISO DE SUBLISTA (Ícone discreto) */}
+                        {item.sublist && (
+                             <i className="ph-bold ph-code text-[10px] text-indigo-500/70 ml-1.5"></i>
+                        )}
                       </button>
                     ))}
-                    
-                    <button
-                        onClick={addNewLink}
-                        className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-md transition-all duration-200 text-green-500 hover:bg-green-500/10 hover:text-green-400 border border-transparent hover:border-green-500/20"
-                        title="Adicionar Novo Link"
-                    >
-                        <i className="ph-bold ph-plus text-sm"></i>
-                        <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
-                          Adicionar
-                        </span>
-                    </button>
                   </div>
                 </div>
 
+                {/* --- CONTEÚDO DA MODAL --- */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0a0a]">
                   <div className="flex flex-col">
-                    <div className="px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a] bg-[#0c0c0c]">
+                    
+                    {/* Barra de Título e Ações */}
+                    <div className={`px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a] transition-colors duration-300 ${editingSublist ? 'bg-indigo-900/10' : 'bg-[#0c0c0c]'}`}>
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg ${activeItem.color === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : activeItem.color} flex items-center justify-center bg-opacity-20`}>
-                          <i className={`ph-bold ${activeItem.icon} text-base text-white`}></i>
+                        <div className={`w-8 h-8 rounded-lg ${editingData.color === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : editingData.color} flex items-center justify-center bg-opacity-20`}>
+                          <i className={`ph-bold ${editingData.icon} text-base text-white`}></i>
                         </div>
                         <div className="flex flex-col leading-none">
-                          <h3 className="text-[11px] font-black text-white uppercase tracking-widest">{activeItem.title}</h3>
-                          <span className="text-[8px] text-gray-600 font-bold uppercase mt-1">Editando Link</span>
+                          <h3 className="text-[11px] font-black text-white uppercase tracking-widest">{editingData.title}</h3>
+                          <span className={`text-[8px] font-bold uppercase mt-1 flex items-center gap-1 ${editingSublist ? 'text-indigo-400' : 'text-gray-600'}`}>
+                             {editingSublist ? (
+                                <>
+                                    <i className="ph-bold ph-code"></i>
+                                    Editando Sublink
+                                </>
+                             ) : 'Editando Link Principal'}
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* Botão SUBLISTA / VOLTAR */}
                         <button 
-                          onClick={() => setShowDeleteConfirm(true)} 
-                          className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group"
-                          title="Excluir"
+                          onClick={() => toggleSublistCreation(activeItem.id)} 
+                          className="flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full group relative text-gray-600 hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-110 active:scale-95"
+                          title={activeItem.sublist ? (editingSublist ? "Voltar para Principal" : "Editar Sublink") : "Criar Sublink"}
                         >
-                          <i className="ph-bold ph-trash text-lg group-hover:scale-110"></i>
+                          <i className={`ph-bold ${
+                              editingSublist 
+                                ? 'ph-arrow-u-up-left' 
+                                : (activeItem.sublist ? 'ph-pencil-simple' : 'ph-plus')
+                              } text-lg`}></i>
+                        </button>
+
+                        {/* Botão LIXEIRA INTELIGENTE */}
+                        <button 
+                          onClick={() => editingSublist ? setShowSublistDeleteConfirm(true) : setShowDeleteConfirm(true)} 
+                          className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group hover:scale-110 active:scale-95"
+                          title={editingSublist ? "Excluir Sublink" : "Excluir Link"}
+                        >
+                          <i className="ph-bold ph-trash text-lg"></i>
                         </button>
                       </div>
                     </div>
 
+                    {/* Formulário de Edição */}
                     <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                      
+                      {/* Aviso visual de conexão */}
+                      {editingSublist && (
+                          <div className="flex items-center gap-2 p-2 rounded bg-indigo-500/10 border border-indigo-500/20 mb-2">
+                              <i className="ph-fill ph-plugs-connected text-indigo-400"></i>
+                              <span className="text-[10px] text-indigo-200">
+                                  Esse Sublink está conectada a <strong>{activeItem.title}</strong>
+                              </span>
+                          </div>
+                      )}
+
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Título</label>
+                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Título {editingSublist ? '(Sub)' : ''}</label>
                           <input
                             type="text"
-                            value={activeItem.title}
+                            value={editingData.title || ''}
                             onChange={(e) => updateItem(activeItem.id, 'title', e.target.value)}
                             className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20"
+                            placeholder={editingSublist ? "Ex: Minha Lista VIP" : "Título do Site"}
                           />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Subtítulo</label>
                           <input
                             type="text"
-                            value={activeItem.subtitle}
+                            value={editingData.subtitle || ''}
                             onChange={(e) => updateItem(activeItem.id, 'subtitle', e.target.value)}
                             className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20"
                           />
@@ -658,16 +848,16 @@
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Classe do Ícone (Phosphor)</label>
                         <input
                           type="text"
-                          value={activeItem.icon}
+                          value={editingData.icon || ''}
                           onChange={(e) => updateItem(activeItem.id, 'icon', e.target.value)}
                           className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-white/20 font-mono"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Link de Destino (URL)</label>
+                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Link de Destino (URL) {editingSublist ? '(Alternativo)' : ''}</label>
                         <input
                           type="text"
-                          value={activeItem.url}
+                          value={editingData.url || ''}
                           onChange={(e) => updateItem(activeItem.id, 'url', e.target.value)}
                           className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-gray-400 outline-none focus:border-white/20"
                         />
@@ -691,30 +881,43 @@
                                   <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-3">
                                     <div className="grid grid-cols-7 gap-2">
                                       {AVAILABLE_COLORS.map((colorClass) => {
-                                        // LÓGICA DE EXCLUSIVIDADE
                                         const isExclusive = colorClass !== 'random';
                                         
-                                        const owner = isExclusive 
-                                            ? tempItems.find(i => i.color === colorClass && i.id !== activeItem.id)
-                                            : null;
+                                        // Lógica de exclusão de cores para sublistas
+                                        let owner = null;
+                                        if (isExclusive) {
+                                            if (editingSublist) {
+                                                // Verifica se alguma OUTRA sublista já usa essa cor
+                                                owner = tempItems.find(i => 
+                                                    i.id !== activeItem.id && // Não é o item atual
+                                                    i.sublist && // Tem sublista
+                                                    i.sublist.color === colorClass // A cor é igual
+                                                );
+                                            } else {
+                                                // Verifica listas principais
+                                                owner = tempItems.find(i => i.color === colorClass && i.id !== activeItem.id);
+                                            }
+                                        }
+
+                                        const isDisabled = !!owner;
 
                                         return (
                                           <button
                                             key={colorClass}
-                                            onClick={() => !owner && updateItem(activeItem.id, 'color', colorClass)}
-                                            disabled={!!owner}
-                                            title={owner ? `Usado por ${owner.title}` : colorClass}
+                                            onClick={() => !isDisabled && updateItem(activeItem.id, 'color', colorClass)}
+                                            disabled={isDisabled}
+                                            title={owner ? (editingSublist ? `Usado pelo Sublink de ${owner.title}` : `Usado por ${owner.title}`) : colorClass}
                                             className={`h-6 rounded-md relative flex items-center justify-center transition-all duration-200 ${
-                                              activeItem.color === colorClass
-                                                ? 'ring-2 ring-white scale-105 shadow-lg opacity-100' // Selecionado
-                                                : owner 
-                                                  ? 'opacity-50 cursor-not-allowed border border-white/10' // Usado (Dono existe)
-                                                  : 'opacity-20 hover:opacity-100 hover:scale-110 border border-transparent' // Não usado (Alterado aqui)
+                                              editingData.color === colorClass
+                                                ? 'ring-2 ring-white scale-105 shadow-lg opacity-100'
+                                                : isDisabled 
+                                                  ? 'opacity-50 cursor-not-allowed border border-white/10' 
+                                                  : 'opacity-20 hover:opacity-100 hover:scale-110 border border-transparent'
                                             }`}
                                           >
                                             <div className={`w-full h-full rounded-md shadow-sm ${colorClass === 'random' ? 'bg-gradient-to-tr from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500' : colorClass}`}></div>
                                             
-                                            {owner && (
+                                            {isDisabled && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
                                                       <i className={`ph-bold ${owner.icon} text-white text-xs`}></i>
                                                 </div>
@@ -728,22 +931,26 @@
 
                              <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Status do Link</label>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Status</label>
                                     <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
-                                        <span className={`text-[10px] font-bold ${activeItem.enabled ? 'text-green-500' : 'text-red-500'}`}>
-                                            {activeItem.enabled ? 'ATIVO' : 'INATIVO'}
+                                        <span className={`text-[10px] font-bold ${editingData.enabled ? 'text-green-500' : 'text-red-500'}`}>
+                                            {editingData.enabled ? 'ATIVO' : 'INATIVO'}
                                         </span>
-                                        <ToggleSwitch checked={activeItem.enabled} onChange={() => toggleEnabled(activeItem.id)} />
+                                        {/* FIX: Usando updateItem genérico em vez de toggleEnabled específico */}
+                                        <ToggleSwitch 
+                                            checked={editingData.enabled} 
+                                            onChange={(val) => updateItem(activeItem.id, 'enabled', val)} 
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Modo de Abertura</label>
                                     <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
                                         <span className="text-[10px] font-bold text-gray-300">
-                                            {activeItem.openNewTab !== false ? 'NOVA ABA' : 'MESMA ABA'}
+                                            {editingData.openNewTab !== false ? 'NOVA ABA' : 'MESMA ABA'}
                                         </span>
                                         <ToggleSwitch 
-                                          checked={activeItem.openNewTab !== false} 
+                                          checked={editingData.openNewTab !== false} 
                                           onChange={(val) => updateItem(activeItem.id, 'openNewTab', val)} 
                                         />
                                     </div>

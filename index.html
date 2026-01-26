@@ -36,21 +36,22 @@
       background: linear-gradient(135deg, #121212 0%, #0d0d0d 100%);
       border: 1px solid #2a2a2a;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-      animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: modalEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transform-origin: center center;
       position: relative;
     }
 
     @keyframes modalEnter {
-      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     /* --- Links (Novo Visual OTIMIZADO) --- */
     .card-hover {
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
-                  box-shadow 0.3s ease, 
-                  border-color 0.3s ease;
+      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                  box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                  border-color 0.3s ease,
+                  background 0.3s ease;
       will-change: transform; 
       border: 1px solid rgba(255, 255, 255, 0.05);
       background: linear-gradient(145deg, #121212 0%, #0c0c0c 100%);
@@ -58,18 +59,18 @@
     }
 
     .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 30px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
     }
 
     /* Otimização dos ícones dentro do card */
     .card-hover .icon-transition {
-        transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     /* Animação de troca de sublista */
     .content-swap-enter {
-        animation: fadeScaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        animation: fadeScaleIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     @keyframes fadeScaleIn {
@@ -93,7 +94,8 @@
     }
 
     .fab-active-press:active {
-      transform: scale(0.9) !important;
+      transform: scale(0.92) !important;
+      transition: transform 0.1s ease-out;
     }
 
     .custom-scrollbar::-webkit-scrollbar {
@@ -119,7 +121,7 @@
       max-height: 0;
       opacity: 0;
       overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      transition: max-height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease;
     }
 
     .advanced-settings-enter.show {
@@ -160,7 +162,7 @@
       return Date.now().toString(36) + Math.random().toString(36).substr(2);
     };
 
-    // --- CONFIGURAÇÃO PADRÃO (AGORA COM 6 LINKS) ---
+    // --- CONFIGURAÇÃO PADRÃO ---
     const DEFAULT_CONFIG = [
       { 
         id: '1', 
@@ -178,7 +180,6 @@
       { id: '2', title: "seasonalist", subtitle: "version-ii", url: "#", icon: "ph-clock", color: "bg-red-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
       { id: '3', title: "myhtmlist", subtitle: "version-viii", url: "#", icon: "ph-file-html", color: "bg-pink-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
       { id: '5', title: "my-list", subtitle: "version-v", url: "#", icon: "ph-star", color: "random", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
-      // Novos links adicionados para totalizar 6
       { id: '6', title: "anilist", subtitle: "tracking", url: "https://anilist.co", icon: "ph-list-magnifying-glass", color: "bg-blue-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
       { id: '7', title: "mangadex", subtitle: "reader", url: "https://mangadex.org", icon: "ph-book-open", color: "bg-orange-600", visible: true, enabled: true, openNewTab: true, activeMode: 'main', sublist: null },
     ];
@@ -223,48 +224,40 @@
       return { time, greeting, formattedDate };
     };
 
+    // --- SISTEMA DE SALVAMENTO ---
     const usePersistentData = (key, initialValue) => {
-      const [data, setData] = useState(initialValue);
-      const [isLoaded, setIsLoaded] = useState(false);
-
-      const migrateData = useCallback((rawData) => {
-        if (!Array.isArray(rawData)) return initialValue;
-        
-        return rawData.map(item => ({
-          ...item,
-          openNewTab: item.openNewTab !== undefined ? item.openNewTab : true,
-          enabled: item.enabled !== undefined ? item.enabled : true,
-          visible: item.visible !== undefined ? item.visible : true,
-          activeMode: item.activeMode || 'main', 
-          sublist: item.sublist || null, 
-          id: item.id || generateSafeId()
-        }));
-      }, [initialValue]);
-
-      useEffect(() => {
+      const [data, setData] = useState(() => {
         try {
           const saved = localStorage.getItem(key);
           if (saved) {
             const parsed = JSON.parse(saved);
-            setData(migrateData(parsed));
-          } else {
-            setData(initialValue);
+            if (Array.isArray(parsed)) {
+                return parsed.map(item => ({
+                    ...item,
+                    openNewTab: item.openNewTab !== undefined ? item.openNewTab : true,
+                    enabled: item.enabled !== undefined ? item.enabled : true,
+                    visible: item.visible !== undefined ? item.visible : true,
+                    activeMode: item.activeMode || 'main', 
+                    sublist: item.sublist || null, 
+                    id: item.id || generateSafeId()
+                }));
+            }
           }
         } catch (error) {
-          console.error("Erro ao carregar dados:", error);
-          setData(initialValue);
-        } finally {
-          setIsLoaded(true);
+          console.error("Erro ao ler localStorage:", error);
         }
-      }, [key, migrateData]);
+        return initialValue;
+      });
+
+      const [isLoaded, setIsLoaded] = useState(true);
 
       const saveData = useCallback((newData) => {
         try {
           setData(newData);
           localStorage.setItem(key, JSON.stringify(newData));
+          // REMOVIDO: Alerta de confirmação visual
         } catch (error) {
           console.error("Erro ao salvar dados:", error);
-          alert("Erro ao salvar configurações. Verifique se o armazenamento local está cheio.");
         }
       }, [key]);
 
@@ -321,18 +314,16 @@
         }
       };
 
-      const customBorderStyle = {}; 
-
       const WrapperProps = isDisabled ? {
-        title: "Indisponível no momento",
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between border border-[#222] bg-[#0c0c0c] opacity-50 cursor-not-allowed`,
+        // REMOVIDO: title (tooltip)
       } : {
         href: url,
         target: shouldOpenNewTab ? "_blank" : "_self",
         rel: shouldOpenNewTab ? "noopener noreferrer" : undefined,
         onClick: handleCardClick,
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between card-hover cursor-pointer`,
-        style: customBorderStyle 
+        // REMOVIDO: title (tooltip)
       };
 
       return (
@@ -358,7 +349,7 @@
                     ${isSublistActive 
                         ? 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10' 
                         : 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10'}`}
-                    title={isSublistActive ? "Voltar para lista principal" : `Ir para o ${data.sublist.title || 'Sublink'}`}
+                    // REMOVIDO: title (tooltip)
                 >
                     <i className={`ph-bold ph-caret-double-right text-sm transition-transform duration-300 ${isSublistActive ? 'rotate-180' : ''}`}></i>
                 </button>
@@ -394,8 +385,7 @@
 
     // --- APP PRINCIPAL ---
     const App = () => {
-      // CORREÇÃO: Mudamos a chave para 'v6_fixed' para garantir que os novos 6 links carreguem
-      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v6_fixed', DEFAULT_CONFIG);
+      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v7_stable', DEFAULT_CONFIG);
       const { time, greeting, formattedDate } = useClock();
 
       const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -434,6 +424,7 @@
       const saveConfig = useCallback(() => {
         setItems(tempItems);
         setIsConfigOpen(false);
+        // REMOVIDO: Alerta de confirmação
       }, [tempItems, setItems]);
 
       const addNewLink = useCallback(() => {
@@ -465,12 +456,10 @@
 
       }, [items, isConfigOpen]);
 
-      // --- BACKEND LÓGICO MELHORADO ---
       const updateItem = useCallback((id, field, value) => {
         setTempItems(prev => prev.map(item => {
             if (item.id !== id) return item;
 
-            // Se estiver editando sublista, atualiza DENTRO do objeto sublist
             if (editingSublist && item.sublist) {
                 return {
                     ...item,
@@ -480,7 +469,6 @@
                     }
                 };
             }
-            // Caso contrário, atualiza no item principal
             return { ...item, [field]: value };
         }));
       }, [editingSublist]);
@@ -599,7 +587,7 @@
               className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
                 isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-24 opacity-0 scale-50 pointer-events-none'
               } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
-              title="Criar Nova Lista"
+              // REMOVIDO: title
               style={{ transitionDelay: isFabOpen ? '50ms' : '0ms' }}
             >
                 <i className="ph-bold ph-plus text-xl transition-all duration-500 ease-in-out group-hover:rotate-90 group-hover:scale-110"></i>
@@ -611,7 +599,7 @@
               className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
                 isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-75 pointer-events-none'
               } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
-              title="Configurações"
+              // REMOVIDO: title
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-90">
                 <path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65c-.03-.24-.24-.42-.49-.42h-4c-.25 0-.46.18-.49.42l.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
@@ -626,7 +614,7 @@
               <LucideIcon name="chevron-up" size={32} />
             </button>
           </div>
-          
+
           <main className="w-full max-w-4xl z-10 p-4 relative">
             <header className="relative flex flex-col items-center justify-center mb-16 select-none group">
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -748,7 +736,7 @@
                             ? 'bg-white/15 text-white shadow-lg'
                             : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
                         }`}
-                        title="Arraste para reorganizar"
+                        // REMOVIDO: title (tooltip)
                       >
                         <i className={`ph-bold ${item.icon} text-sm`}></i>
                         <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
@@ -791,7 +779,7 @@
                         <button 
                           onClick={() => toggleSublistCreation(activeItem.id)} 
                           className="flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full group relative text-gray-600 hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-110 active:scale-95"
-                          title={activeItem.sublist ? (editingSublist ? "Voltar para Principal" : "Editar Sublink") : "Criar Sublink"}
+                          // REMOVIDO: title
                         >
                           <i className={`ph-bold ${
                               editingSublist 
@@ -804,7 +792,7 @@
                         <button 
                           onClick={() => editingSublist ? setShowSublistDeleteConfirm(true) : setShowDeleteConfirm(true)} 
                           className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group hover:scale-110 active:scale-95"
-                          title={editingSublist ? "Excluir Sublink" : "Excluir Link"}
+                          // REMOVIDO: title
                         >
                           <i className="ph-bold ph-trash text-lg"></i>
                         </button>
@@ -908,6 +896,7 @@
                                             key={colorClass}
                                             onClick={() => !isDisabled && updateItem(activeItem.id, 'color', colorClass)}
                                             disabled={isDisabled}
+                                            // MANTIDO: title (para indicar o dono da cor)
                                             title={owner ? (editingSublist ? `Usado pelo Sublink de ${owner.title}` : `Usado por ${owner.title}`) : colorClass}
                                             className={`h-6 rounded-md relative flex items-center justify-center transition-all duration-200 ${
                                               editingData.color === colorClass

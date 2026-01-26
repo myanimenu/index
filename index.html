@@ -125,7 +125,7 @@
     }
 
     .advanced-settings-enter.show {
-      max-height: 400px;
+      max-height: 500px;
       opacity: 1;
     }
   </style>
@@ -255,7 +255,6 @@
         try {
           setData(newData);
           localStorage.setItem(key, JSON.stringify(newData));
-          // REMOVIDO: Alerta de confirmação visual
         } catch (error) {
           console.error("Erro ao salvar dados:", error);
         }
@@ -316,14 +315,12 @@
 
       const WrapperProps = isDisabled ? {
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between border border-[#222] bg-[#0c0c0c] opacity-50 cursor-not-allowed`,
-        // REMOVIDO: title (tooltip)
       } : {
         href: url,
         target: shouldOpenNewTab ? "_blank" : "_self",
         rel: shouldOpenNewTab ? "noopener noreferrer" : undefined,
         onClick: handleCardClick,
         className: `group relative w-full h-36 rounded-2xl p-6 overflow-hidden flex flex-col justify-between card-hover cursor-pointer`,
-        // REMOVIDO: title (tooltip)
       };
 
       return (
@@ -336,22 +333,26 @@
              <i className={`ph-fill ${icon} text-[8rem] ${textColorClass}`}></i>
           </div>
 
-          {/* Botão de Toggle Sublista */}
+          {/* Botão de Toggle Sublista (REDESENHADO: Botão Circular Flutuante) */}
           {data.sublist && (
-             <div className="absolute top-0 right-6 z-30 toggle-btn">
+             <div className="absolute top-4 right-4 z-30 toggle-btn">
                 <button
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         onToggleMode(data.id);
                     }}
-                    className={`h-7 w-14 rounded-b-xl flex items-center justify-center transition-all duration-300 backdrop-blur-md border-b border-x shadow-lg hover:scale-110 active:scale-95 hover:h-9 
-                    ${isSublistActive 
-                        ? 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10' 
-                        : 'bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10'}`}
-                    // REMOVIDO: title (tooltip)
+                    className={`
+                        w-8 h-8 rounded-full flex items-center justify-center 
+                        transition-all duration-300 backdrop-blur-md border shadow-lg 
+                        hover:scale-110 active:scale-90
+                        ${isSublistActive 
+                            ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300 shadow-indigo-900/20' 
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
+                    `}
+                    title="Alternar para Sublink"
                 >
-                    <i className={`ph-bold ph-caret-double-right text-sm transition-transform duration-300 ${isSublistActive ? 'rotate-180' : ''}`}></i>
+                    <i className={`ph-bold ph-arrows-left-right text-sm transition-transform duration-500 ${isSublistActive ? 'rotate-180' : ''}`}></i>
                 </button>
              </div>
           )}
@@ -396,6 +397,11 @@
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       const [showSublistDeleteConfirm, setShowSublistDeleteConfirm] = useState(false);
+      // ESTADO: Confirmação de importação
+      const [showImportConfirm, setShowImportConfirm] = useState(false);
+      // NOVO ESTADO: Confirmação de exportação
+      const [showExportConfirm, setShowExportConfirm] = useState(false);
+      
       const [draggedId, setDraggedId] = useState(null);
 
       const [editingSublist, setEditingSublist] = useState(false);
@@ -418,14 +424,60 @@
         setIsConfigOpen(true);
         setShowDeleteConfirm(false);
         setShowSublistDeleteConfirm(false);
+        setShowImportConfirm(false); 
+        setShowExportConfirm(false); // Resetar modal de exportação
         setEditingSublist(false);
       }, [items, activeTabId]);
 
       const saveConfig = useCallback(() => {
         setItems(tempItems);
         setIsConfigOpen(false);
-        // REMOVIDO: Alerta de confirmação
       }, [tempItems, setItems]);
+
+      // --- EXPORTAR CONFIGURAÇÃO (Agora executa após confirmação) ---
+      const executeExport = useCallback(() => {
+        const dataStr = JSON.stringify(tempItems, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        const date = new Date().toISOString().slice(0, 10);
+        link.download = `myanimenu-backup-${date}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setShowExportConfirm(false); // Fecha o modal
+      }, [tempItems]);
+
+      // --- IMPORTAR CONFIGURAÇÃO (ATUALIZADO) ---
+      const handleImport = useCallback((event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (Array.isArray(importedData)) {
+                    setTempItems(importedData);
+                    
+                    if (importedData.length > 0) {
+                        setActiveTabId(importedData[0].id);
+                    }
+                    // Exibe o modal personalizado em vez do alert
+                    setShowImportConfirm(true);
+                } else {
+                    alert("O arquivo selecionado não é válido.");
+                }
+            } catch (error) {
+                console.error("Erro ao importar:", error);
+                alert("Erro ao ler o arquivo de configuração.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      }, []);
 
       const addNewLink = useCallback(() => {
         const colorPool = ["bg-red-600", "bg-orange-600", "bg-green-600", "bg-cyan-600", "bg-pink-600", "random"];
@@ -587,7 +639,6 @@
               className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
                 isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-24 opacity-0 scale-50 pointer-events-none'
               } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
-              // REMOVIDO: title
               style={{ transitionDelay: isFabOpen ? '50ms' : '0ms' }}
             >
                 <i className="ph-bold ph-plus text-xl transition-all duration-500 ease-in-out group-hover:rotate-90 group-hover:scale-110"></i>
@@ -599,7 +650,6 @@
               className={`group w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform border border-white/5 fab-active-press ${
                 isFabOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-75 pointer-events-none'
               } bg-white/5 text-white/30 hover:text-white hover:bg-white/10 hover:scale-110`}
-              // REMOVIDO: title
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-90">
                 <path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65c-.03-.24-.24-.42-.49-.42h-4c-.25 0-.46.18-.49.42l.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
@@ -707,6 +757,52 @@
                     </div>
                 )}
 
+                {/* --- POP-UP DE CONFIRMAÇÃO (IMPORTAÇÃO CONCLUÍDA) --- */}
+                {showImportConfirm && (
+                    <div className="absolute inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-sm">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4 animate-bounce">
+                            <i className="ph-bold ph-check text-3xl text-green-500"></i>
+                        </div>
+                        <h3 className="text-white font-black text-xl uppercase tracking-wider mb-2">Importação Concluída</h3>
+                        <p className="text-gray-400 text-sm max-w-xs mb-6 font-medium">
+                            As configurações foram carregadas com sucesso - Clique em <span className="text-white">SALVAR</span> para aplicar
+                        </p>
+                        <button
+                            onClick={() => setShowImportConfirm(false)}
+                            className="px-5 py-2.5 rounded-lg bg-green-600 border border-green-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-green-700 hover:shadow-lg hover:shadow-green-900/30 transition-all duration-200"
+                        >
+                            OK, Entendi
+                        </button>
+                    </div>
+                )}
+
+                {/* --- NOVO: POP-UP DE CONFIRMAÇÃO (EXPORTAÇÃO) --- */}
+                {showExportConfirm && (
+                    <div className="absolute inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-sm">
+                        <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 animate-bounce">
+                            <i className="ph-bold ph-download-simple text-3xl text-blue-500"></i>
+                        </div>
+                        <h3 className="text-white font-black text-xl uppercase tracking-wider mb-2">Exportar Backup</h3>
+                        <p className="text-gray-400 text-sm max-w-xs mb-6 font-medium">
+                            Deseja baixar o arquivo de configuração atual? <br/> Você poderá importá-lo depois para restaurar seus links.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowExportConfirm(false)}
+                                className="px-5 py-2.5 rounded-lg bg-[#222] border border-[#333] text-gray-300 text-xs font-bold uppercase tracking-widest hover:bg-[#333] hover:text-white transition-all duration-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={executeExport}
+                                className="px-5 py-2.5 rounded-lg bg-blue-600 border border-blue-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-900/30 transition-all duration-200"
+                            >
+                              Confirmar Exportação
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* --- HEADER DA MODAL (TABS) --- */}
                 <div className="flex-none flex items-center bg-[#050505] border-b border-[#1a1a1a] h-12 pr-2">
                   <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-scrollbar horizontal-scrollbar h-full px-2">
@@ -736,7 +832,6 @@
                             ? 'bg-white/15 text-white shadow-lg'
                             : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
                         }`}
-                        // REMOVIDO: title (tooltip)
                       >
                         <i className={`ph-bold ${item.icon} text-sm`}></i>
                         <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
@@ -779,7 +874,6 @@
                         <button 
                           onClick={() => toggleSublistCreation(activeItem.id)} 
                           className="flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full group relative text-gray-600 hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-110 active:scale-95"
-                          // REMOVIDO: title
                         >
                           <i className={`ph-bold ${
                               editingSublist 
@@ -792,7 +886,6 @@
                         <button 
                           onClick={() => editingSublist ? setShowSublistDeleteConfirm(true) : setShowDeleteConfirm(true)} 
                           className="text-gray-600 hover:text-red-500 flex items-center justify-center transition-all duration-300 w-8 h-8 rounded-full hover:bg-red-500/10 group hover:scale-110 active:scale-95"
-                          // REMOVIDO: title
                         >
                           <i className="ph-bold ph-trash text-lg"></i>
                         </button>
@@ -800,7 +893,7 @@
                     </div>
 
                     {/* Formulário de Edição */}
-                    <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                    <div className="p-5 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
                       
                       {/* Aviso visual de conexão */}
                       {editingSublist && (
@@ -863,6 +956,7 @@
                           </button>
                       </div>
 
+                      {/* --- CONFIGURAÇÕES AVANÇADAS --- */}
                       <div className={`advanced-settings-enter ${showAdvancedSettings ? 'show' : ''}`}>
                           <div className="space-y-4 pt-2">
                              
@@ -896,7 +990,6 @@
                                             key={colorClass}
                                             onClick={() => !isDisabled && updateItem(activeItem.id, 'color', colorClass)}
                                             disabled={isDisabled}
-                                            // MANTIDO: title (para indicar o dono da cor)
                                             title={owner ? (editingSublist ? `Usado pelo Sublink de ${owner.title}` : `Usado por ${owner.title}`) : colorClass}
                                             className={`h-6 rounded-md relative flex items-center justify-center transition-all duration-200 ${
                                               editingData.color === colorClass
@@ -923,11 +1016,10 @@
                              <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Status</label>
-                                    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
+                                    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between h-[38px]">
                                         <span className={`text-[10px] font-bold ${editingData.enabled ? 'text-green-500' : 'text-red-500'}`}>
                                             {editingData.enabled ? 'ATIVO' : 'INATIVO'}
                                         </span>
-                                        {/* FIX: Usando updateItem genérico em vez de toggleEnabled específico */}
                                         <ToggleSwitch 
                                             checked={editingData.enabled} 
                                             onChange={(val) => updateItem(activeItem.id, 'enabled', val)} 
@@ -936,20 +1028,49 @@
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Modo de Abertura</label>
-                                    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between">
+                                    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-between h-[38px]">
                                         <span className="text-[10px] font-bold text-gray-300">
                                             {editingData.openNewTab !== false ? 'NOVA ABA' : 'MESMA ABA'}
                                         </span>
                                         <ToggleSwitch 
-                                          checked={editingData.openNewTab !== false} 
-                                          onChange={(val) => updateItem(activeItem.id, 'openNewTab', val)} 
+                                            checked={editingData.openNewTab !== false} 
+                                            onChange={(val) => updateItem(activeItem.id, 'openNewTab', val)} 
                                         />
                                     </div>
                                 </div>
                              </div>
-
                           </div>
                       </div>
+
+                      {/* --- IMPORTAR / EXPORTAR DADOS (AGORA FORA DE MAIS CONFIGURAÇÕES) --- */}
+                      <div className="pt-2 border-t border-[#2a2a2a]/50">
+                          <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">
+                            Gerenciar Dados
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                              {/* Botão Exportar - Agora abre o modal */}
+                              <button
+                                onClick={() => setShowExportConfirm(true)}
+                                className="group bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:border-[#333] transition-all h-[38px]"
+                              >
+                                <i className="ph-bold ph-download-simple text-gray-500 group-hover:text-white transition-colors text-lg group-hover:-translate-y-0.5 transition-transform duration-300"></i>
+                                <span className="text-[10px] font-bold text-gray-500 group-hover:text-white transition-colors uppercase tracking-widest">Exportar</span>
+                              </button>
+
+                              {/* Botão Importar */}
+                              <label className="group bg-[#141414] border border-[#2a2a2a] rounded-lg px-3 py-2 flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:border-[#333] transition-all cursor-pointer h-[38px]">
+                                <i className="ph-bold ph-upload-simple text-gray-500 group-hover:text-white transition-colors text-lg group-hover:-translate-y-0.5 transition-transform duration-300"></i>
+                                <span className="text-[10px] font-bold text-gray-500 group-hover:text-white transition-colors uppercase tracking-widest">Importar</span>
+                                <input
+                                  type="file"
+                                  accept=".json"
+                                  className="hidden"
+                                  onChange={handleImport}
+                                />
+                              </label>
+                          </div>
+                      </div>
+
                     </div>
                   </div>
                 </div>

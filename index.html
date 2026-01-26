@@ -163,6 +163,7 @@
     };
 
     // --- CONFIGURAÇÃO PADRÃO ---
+    // Edite aqui para mudar o que aparece quando o usuário acessa pela primeira vez
     const DEFAULT_CONFIG = [
       { 
         id: '1', 
@@ -224,14 +225,16 @@
       return { time, greeting, formattedDate };
     };
 
-    // --- SISTEMA DE SALVAMENTO ---
+    // --- SISTEMA DE SALVAMENTO (CORRIGIDO E ROBUSTO) ---
     const usePersistentData = (key, initialValue) => {
+      // 1. Inicialização preguiçosa (Lazy Initialization)
       const [data, setData] = useState(() => {
         try {
           const saved = localStorage.getItem(key);
           if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed)) {
+                // Sanitização: garante que todos os campos existam mesmo em dados antigos
                 return parsed.map(item => ({
                     ...item,
                     openNewTab: item.openNewTab !== undefined ? item.openNewTab : true,
@@ -245,22 +248,22 @@
           }
         } catch (error) {
           console.error("Erro ao ler localStorage:", error);
+          // Se falhar (dados corrompidos), não quebra o site, usa o padrão
         }
         return initialValue;
       });
 
-      const [isLoaded, setIsLoaded] = useState(true);
-
-      const saveData = useCallback((newData) => {
+      // 2. Efeito de Salvamento Automático
+      // Toda vez que 'data' muda, salvamos no localStorage.
+      useEffect(() => {
         try {
-          setData(newData);
-          localStorage.setItem(key, JSON.stringify(newData));
+          localStorage.setItem(key, JSON.stringify(data));
         } catch (error) {
-          console.error("Erro ao salvar dados:", error);
+          console.error("Falha Crítica: Não foi possível salvar no armazenamento local.", error);
         }
-      }, [key]);
+      }, [data, key]);
 
-      return [data, saveData, isLoaded];
+      return [data, setData, true];
     };
 
     // --- COMPONENTES ---
@@ -333,7 +336,7 @@
              <i className={`ph-fill ${icon} text-[8rem] ${textColorClass}`}></i>
           </div>
 
-          {/* Botão de Toggle Sublista (REDESENHADO: Botão Circular Flutuante) */}
+          {/* Botão de Toggle Sublista */}
           {data.sublist && (
              <div className="absolute top-4 right-4 z-30 toggle-btn">
                 <button
@@ -386,7 +389,8 @@
 
     // --- APP PRINCIPAL ---
     const App = () => {
-      const [items, setItems, isDataLoaded] = usePersistentData('site_config_v7_stable', DEFAULT_CONFIG);
+      // MUDANÇA IMPORTANTE: Nova chave 'myanimenu_v10_fixed' para limpar dados corrompidos antigos
+      const [items, setItems, isDataLoaded] = usePersistentData('myanimenu_v10_fixed', DEFAULT_CONFIG);
       const { time, greeting, formattedDate } = useClock();
 
       const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -397,13 +401,10 @@
       const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       const [showSublistDeleteConfirm, setShowSublistDeleteConfirm] = useState(false);
-      // ESTADO: Confirmação de importação
       const [showImportConfirm, setShowImportConfirm] = useState(false);
-      // NOVO ESTADO: Confirmação de exportação
       const [showExportConfirm, setShowExportConfirm] = useState(false);
       
       const [draggedId, setDraggedId] = useState(null);
-
       const [editingSublist, setEditingSublist] = useState(false);
 
       const visibleItems = useMemo(() => items.filter(item => item.visible), [items]);
@@ -425,16 +426,16 @@
         setShowDeleteConfirm(false);
         setShowSublistDeleteConfirm(false);
         setShowImportConfirm(false); 
-        setShowExportConfirm(false); // Resetar modal de exportação
+        setShowExportConfirm(false);
         setEditingSublist(false);
       }, [items, activeTabId]);
 
       const saveConfig = useCallback(() => {
+        // Ao atualizar 'items', o useEffect dentro de usePersistentData vai salvar automaticamente
         setItems(tempItems);
         setIsConfigOpen(false);
       }, [tempItems, setItems]);
 
-      // --- EXPORTAR CONFIGURAÇÃO (Agora executa após confirmação) ---
       const executeExport = useCallback(() => {
         const dataStr = JSON.stringify(tempItems, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
@@ -447,10 +448,9 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setShowExportConfirm(false); // Fecha o modal
+        setShowExportConfirm(false);
       }, [tempItems]);
 
-      // --- IMPORTAR CONFIGURAÇÃO (ATUALIZADO) ---
       const handleImport = useCallback((event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -465,7 +465,6 @@
                     if (importedData.length > 0) {
                         setActiveTabId(importedData[0].id);
                     }
-                    // Exibe o modal personalizado em vez do alert
                     setShowImportConfirm(true);
                 } else {
                     alert("O arquivo selecionado não é válido.");
@@ -499,14 +498,18 @@
             setTempItems(prev => [...prev, newItem]);
             setActiveTabId(newItem.id);
         } else {
-            setTempItems([...items, newItem]); 
+            // Se adicionado fora da modal, salva imediatamente
+            const newItems = [...items, newItem];
+            setItems(newItems); // Isso vai disparar o salvamento automático
+            // Configura o estado temporário para abrir a modal já com o novo item
+            setTempItems(newItems);
             setActiveTabId(newItem.id);
             setShowAdvancedSettings(false);
             setIsConfigOpen(true);
             setEditingSublist(false);
         }
 
-      }, [items, isConfigOpen]);
+      }, [items, isConfigOpen, setItems]);
 
       const updateItem = useCallback((id, field, value) => {
         setTempItems(prev => prev.map(item => {
